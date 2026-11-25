@@ -1597,10 +1597,12 @@
           });
           return chain;
         }
-        /* Public endpoints rate-limit in bursts; one delayed retry of
-           the whole chain clears most transient refusals. */
+        /* Public endpoints rate-limit in bursts; delayed retries of
+           the whole chain clear most transient refusals. */
         return attempt().catch(function () {
-          return new Promise(function (res) { setTimeout(res, 1200); }).then(attempt);
+          return new Promise(function (res) { setTimeout(res, 1500); }).then(attempt);
+        }).catch(function () {
+          return new Promise(function (res) { setTimeout(res, 4000); }).then(attempt);
         });
       }
 
@@ -1940,7 +1942,7 @@
         status.textContent = w.checking;
         status.className = "wstatus";
         var acctPubkeys = [];
-        var pTokens = rpcCall("getTokenAccountsByOwner", [addr, { mint: RKU_MINT }, { encoding: "jsonParsed" }])
+        rpcCall("getTokenAccountsByOwner", [addr, { mint: RKU_MINT }, { encoding: "jsonParsed" }])
           .then(function (res) {
             var total = 0;
             var accts = (res && res.value) || [];
@@ -1951,30 +1953,34 @@
               } catch (e) { /* skip unparsable account */ }
             }
             return total;
-          });
-        var pBal = rpcCall("getBalance", [addr]).catch(function () { return null; });
-        Promise.all([pTokens, pBal]).then(function (res) {
-          var rku = res[0];
-          var sol = res[1] && typeof res[1].value === "number" ? res[1].value / 1e9 : null;
-          status.textContent = c.hist;
-          var pHist = rku > 0 || acctPubkeys.length
-            ? computeHistory(addr, acctPubkeys).catch(function () { return { days: 0, score: null, capped: true }; })
-            : Promise.resolve({ days: 0, score: 0, capped: false });
-          return pHist.then(function (hist) {
-            status.textContent = c.rankp;
-            return computeRank(addr, rku).then(function (rk) {
-              lastWallet = {
-                addr: addr, rku: rku, sol: sol, when: new Date(),
-                days: hist.days, score: hist.score, capped: hist.capped,
-                rank: rk ? rk.rank : null, rankTotal: rk ? rk.total : null
-              };
-              renderWalletResult();
-              renderCard();
-              status.textContent = hist.capped ? c.partial : "";
-              status.className = hist.capped ? "wstatus err" : "wstatus";
+          })
+          .then(function (rku) {
+            /* Sequential on purpose: parallel calls burst against
+               rate-limited public endpoints. The SOL balance is
+               secondary and never blocks the token result. */
+            return rpcCall("getBalance", [addr]).catch(function () { return null; }).then(function (balRes) {
+              var sol = balRes && typeof balRes.value === "number" ? balRes.value / 1e9 : null;
+              status.textContent = c.hist;
+              var pHist = rku > 0 || acctPubkeys.length
+                ? computeHistory(addr, acctPubkeys).catch(function () { return { days: 0, score: null, capped: true }; })
+                : Promise.resolve({ days: 0, score: 0, capped: false });
+              return pHist.then(function (hist) {
+                status.textContent = c.rankp;
+                return computeRank(addr, rku).then(function (rk) {
+                  lastWallet = {
+                    addr: addr, rku: rku, sol: sol, when: new Date(),
+                    days: hist.days, score: hist.score, capped: hist.capped,
+                    rank: rk ? rk.rank : null, rankTotal: rk ? rk.total : null
+                  };
+                  renderWalletResult();
+                  renderCard();
+                  status.textContent = hist.capped ? c.partial : "";
+                  status.className = hist.capped ? "wstatus err" : "wstatus";
+                });
+              });
             });
-          });
-        }).catch(function () {
+          })
+          .catch(function () {
           status.textContent = w.lookupFail;
           status.className = "wstatus err";
         }).then(function () {
