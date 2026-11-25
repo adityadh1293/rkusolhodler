@@ -316,9 +316,12 @@
       .hc-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px 20px; flex-wrap: wrap;
         border-bottom: 1px solid var(--ink-18); padding-bottom: 16px; }
       .hc-brand { display: flex; align-items: center; gap: 14px; }
-      .hc-logo { width: 52px; height: 52px; border-radius: 4px; background: var(--ink); display: flex; align-items: center; justify-content: center; flex: none; }
-      .hc-logo svg { width: 30px; height: 30px; display: block; }
+      .hc-logo { width: 64px; height: 52px; border-radius: 4px; background: var(--ink); display: flex; align-items: center; justify-content: center; flex: none; }
+      .hc-logo svg { width: 46px; height: 46px; display: block; }
       .hc-logo svg path { fill: var(--paper); }
+      .lst-badge { display: inline-flex; vertical-align: -5px; margin-right: 7px; }
+      .lst-badge svg { width: 20px; height: 20px; display: block; }
+      .hc-bal .lst-badge svg { width: 17px; height: 17px; }
       .hc-name { font-size: 24px; font-weight: 700; line-height: 1.1; color: var(--ink); }
       .hc-sub { color: var(--ink-55); font-weight: 600; font-size: 12.5px; margin-top: 3px;
         text-transform: uppercase; letter-spacing: 0.12em; }
@@ -465,7 +468,7 @@
           <p class="sub" data-i18n="statRateSub">SOL per 1 rkuSOL, implied by stake ÷ supply.</p>
         </div>
         <div class="cell" role="listitem">
-          <p class="lab mono" data-i18n="statPrice">rkuSOL price</p>
+          <p class="lab mono"><span class="lst-badge" aria-hidden="true"><svg viewBox="0 0 100 100" focusable="false"><circle cx="50" cy="50" r="48" fill="#0B0B0B" stroke="rgba(140,140,140,0.45)" stroke-width="2"/><path transform="translate(15 15) scale(0.7)" fill="#C0FE37" d="M27.6 9.9L72.7 10.0L73.8 10.9L74.8 12.5L86.1 32.6L94.2 46.0L96.0 49.3L96.0 50.7L92.7 55.9L92.7 56.5L81.8 75.4L80.4 77.2L80.4 77.8L74.2 88.5L73.1 89.6L71.9 90.2L27.9 90.2L27.2 89.5L27.4 89.1L30.1 85.0L37.7 71.3L39.1 69.4L39.1 68.8L40.8 66.5L40.6 66.3L42.2 63.5L43.4 62.0L43.6 61.0L50.0 50.1L4.3 50.0L4.0 49.7L22.9 16.4L23.5 16.0L25.8 11.5Z"/></svg></span><span data-i18n="statPrice">rkuSOL price</span></p>
           <div class="val" id="statPrice">$69.21</div>
           <p class="sub" data-i18n="statPriceSub">Implied by TVL ÷ supply (DefiLlama, Phantom).</p>
         </div>
@@ -553,7 +556,7 @@
         <div class="hcard" id="hCard" hidden>
           <div class="hc-top">
             <div class="hc-brand">
-              <div class="hc-logo" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><path fill-rule="evenodd" fill="#223D0E" d="M12 38V10h13c6.1 0 10.5 4 10.5 9.2 0 4-2.3 7.2-6 8.4L36.5 38h-9.2l-6.1-9.2H20V38h-8zm8-13.8h4.8c1.9 0 3-1.3 3-2.9s-1.1-2.9-3-2.9H20v5.8z"/></svg></div>
+              <div class="hc-logo" aria-hidden="true"><svg viewBox="0 0 100 100" focusable="false"><path d="M81.3 25.6L82.6 25.4L84.3 26.4L90.9 38.1L85.4 48.4L83.0 51.1L70.3 50.9L70.0 49.1L75.8 39.6L75.7 38.6L19.6 38.6L18.7 37.4L25.4 25.8Z"/><path d="M27.1 43.6L58.1 43.4L68.3 61.0L95.1 61.0L96.0 62.3L88.9 74.2L61.7 74.6L58.2 70.0L50.7 56.6L21.0 56.6L20.1 54.9Z"/><path d="M11.0 61.2L36.8 61.0L38.8 63.4L40.7 68.1L36.4 74.6L4.9 74.2L4.0 73.3L4.4 71.4L9.9 61.9Z"/></svg></div>
               <div>
                 <div class="hc-name">Raiku</div>
                 <div class="hc-sub" id="hcSub">rkuSOL Holder Card</div>
@@ -574,7 +577,7 @@
             <div class="hc-bal">
               <div class="lab mono" id="hcBalLab">RKUSOL BALANCE</div>
               <div class="val" id="hcBal">0.00</div>
-              <div class="unit">rkuSOL</div>
+              <div class="unit"><span class="lst-badge" aria-hidden="true"><svg viewBox="0 0 100 100" focusable="false"><circle cx="50" cy="50" r="48" fill="#0B0B0B" stroke="rgba(140,140,140,0.45)" stroke-width="2"/><path transform="translate(15 15) scale(0.7)" fill="#C0FE37" d="M27.6 9.9L72.7 10.0L73.8 10.9L74.8 12.5L86.1 32.6L94.2 46.0L96.0 49.3L96.0 50.7L92.7 55.9L92.7 56.5L81.8 75.4L80.4 77.2L80.4 77.8L74.2 88.5L73.1 89.6L71.9 90.2L27.9 90.2L27.2 89.5L27.4 89.1L30.1 85.0L37.7 71.3L39.1 69.4L39.1 68.8L40.8 66.5L40.6 66.3L42.2 63.5L43.4 62.0L43.6 61.0L50.0 50.1L4.3 50.0L4.0 49.7L22.9 16.4L23.5 16.0L25.8 11.5Z"/></svg></span>rkuSOL</div>
             </div>
           </div>
           <div class="hc-grid">
@@ -2044,8 +2047,11 @@
         }
         rr(14, 14, 1212, 772, 8); g.strokeStyle = "#223D0E"; g.lineWidth = 3; g.stroke();
         rr(56, 54, 84, 84, 6); g.fillStyle = "#223D0E"; g.fill();
-        g.fillStyle = "#EFEEE9"; g.font = "800 48px system-ui, sans-serif";
-        g.textAlign = "center"; g.fillText("R", 98, 114);
+        g.save(); g.translate(56, 54); g.scale(0.84, 0.84); g.fillStyle = "#EFEEE9";
+        g.fill(new Path2D("M81.3 25.6L82.6 25.4L84.3 26.4L90.9 38.1L85.4 48.4L83.0 51.1L70.3 50.9L70.0 49.1L75.8 39.6L75.7 38.6L19.6 38.6L18.7 37.4L25.4 25.8Z"));
+        g.fill(new Path2D("M27.1 43.6L58.1 43.4L68.3 61.0L95.1 61.0L96.0 62.3L88.9 74.2L61.7 74.6L58.2 70.0L50.7 56.6L21.0 56.6L20.1 54.9Z"));
+        g.fill(new Path2D("M11.0 61.2L36.8 61.0L38.8 63.4L40.7 68.1L36.4 74.6L4.9 74.2L4.0 73.3L4.4 71.4L9.9 61.9Z"));
+        g.restore();
         g.textAlign = "left"; g.fillStyle = "#223D0E"; g.font = "700 40px system-ui, sans-serif";
         g.fillText("Raiku", 166, 92);
         g.fillStyle = "rgba(34,61,14,0.55)"; g.font = "600 22px system-ui, sans-serif";
