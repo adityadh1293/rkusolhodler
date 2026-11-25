@@ -1685,6 +1685,7 @@
         return !!d && d.length === 32;
       }
       function shortAddr(a) { return a.slice(0, 4) + "…" + a.slice(-4); }
+      function maskAddr(a) { return a.slice(0, 6) + "…" + a.slice(-6); }
 
       /* ——— RPC access ———
          Fixed allowlist of public HTTPS endpoints, fixed JSON-RPC method
@@ -1905,7 +1906,7 @@
         document.getElementById("hcUser").textContent = shortAddr(lw.addr);
         var tier = tierFor(lw.rku);
         document.getElementById("hcTier").textContent = tier ? "rkuSOL " + tier : c.none;
-        document.getElementById("hcAddr").textContent = lw.addr;
+        document.getElementById("hcAddr").textContent = maskAddr(lw.addr);
         document.getElementById("hcBal").textContent = nf({ minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(lw.rku);
         document.getElementById("hcDays").textContent = fmtInt(lw.days || 0);
         document.getElementById("hcScore").textContent = typeof lw.score === "number" ? fmtInt(Math.round(lw.score)) : "—";
@@ -2049,7 +2050,7 @@
         if (note.length > 92) note = note.slice(0, 92) + "…";
         g.fillText(note, 56, 590);
         g.fillStyle = "rgba(34,61,14,0.55)"; g.font = "400 18px ui-monospace, monospace";
-        g.fillText(lw.addr, 56, 640);
+        g.fillText(maskAddr(lw.addr), 56, 640);
         g.fillText("rkusolhodler.netlify.app", 56, 690);
         var a = document.createElement("a");
         a.download = "rkusol-holder-" + lw.addr.slice(0, 4) + lw.addr.slice(-4) + ".png";
