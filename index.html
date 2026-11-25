@@ -1,0 +1,1230 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="description" content="A public dashboard for Raiku's rkuSOL liquid staking: total SOL staked, TVL, holders, APY and TVL history, from public sources." />
+    <link rel="icon" href="data:," />
+    <title>rkuSOL Staking — Raiku Public Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/css/geist@latest/index.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/css/geist-mono@latest/index.css" />
+    <style>
+      /* Raiku brand kit (raiku.com/brand-assets): Paper #EFEEE9 is the ground,
+         Ink #223D0E carries type and rules, Deep Ink #0F1D06 is the deepest
+         shadow. Everything else is a mix of paper and ink. Geist for reading,
+         Geist Mono for the machine voice: labels, dates, figures. */
+      :root {
+        --paper: #EFEEE9;
+        --paper-raise: #F5F4EF;
+        --ink: #223D0E;
+        --deep: #0F1D06;
+        --ink-70: rgba(34, 61, 14, 0.72);
+        --ink-55: rgba(34, 61, 14, 0.55);
+        --ink-35: rgba(34, 61, 14, 0.35);
+        --ink-18: rgba(34, 61, 14, 0.18);
+        --ink-10: rgba(34, 61, 14, 0.10);
+        --ink-06: rgba(34, 61, 14, 0.06);
+        --chart: #3E6416;
+        --chart-fill: rgba(62, 100, 22, 0.14);
+        --down: #9A3B12;
+        --field: #FFFFFF;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --paper: #0F1D06;
+          --paper-raise: #15260A;
+          --ink: #EFEEE9;
+          --deep: #EFEEE9;
+          --ink-70: rgba(239, 238, 233, 0.72);
+          --ink-55: rgba(239, 238, 233, 0.55);
+          --ink-35: rgba(239, 238, 233, 0.35);
+          --ink-18: rgba(239, 238, 233, 0.20);
+          --ink-10: rgba(239, 238, 233, 0.12);
+          --ink-06: rgba(239, 238, 233, 0.07);
+          --chart: #A8C686;
+          --chart-fill: rgba(168, 198, 134, 0.16);
+          --down: #E08A5A;
+          --field: #1A2E0D;
+        }
+      }
+      * { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: "Geist", "Noto Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+        font-size: 16px;
+        line-height: 1.55;
+      }
+      .mono {
+        font-family: "Geist Mono", "Noto Sans Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+        letter-spacing: 0.04em;
+      }
+      .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px 64px; }
+
+      /* ——— Top rule bar ——— */
+      .topbar {
+        display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px;
+        padding: 18px 0 14px;
+        border-bottom: 2px solid var(--ink);
+      }
+      .wordmark {
+        font-weight: 600; font-size: 26px; letter-spacing: 0.32em; line-height: 1;
+        margin-right: auto; white-space: nowrap;
+      }
+      .wordmark small {
+        display: block; letter-spacing: 0.14em; font-size: 10px; font-weight: 500;
+        color: var(--ink-70); margin-top: 6px;
+        font-family: "Geist Mono", ui-monospace, monospace;
+      }
+      .langbox { display: flex; align-items: center; gap: 8px; }
+      .langbox label { font-size: 11px; text-transform: uppercase; color: var(--ink-70); }
+      select, input, button { font: inherit; color: inherit; }
+      select {
+        min-height: 40px; padding: 6px 10px; max-width: 190px;
+        background: var(--field); border: 1px solid var(--ink-35); border-radius: 4px;
+      }
+      .snap-badge {
+        font-size: 11px; text-transform: uppercase; color: var(--ink-70);
+        border: 1px solid var(--ink-35); border-radius: 999px; padding: 7px 12px;
+        display: inline-flex; align-items: center; gap: 8px; min-height: 32px;
+      }
+      .snap-badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--chart); flex: none; }
+
+      /* ——— Hero ——— */
+      .hero { padding: 44px 0 8px; }
+      .kicker { font-size: 12px; text-transform: uppercase; color: var(--ink-70); margin: 0 0 14px; }
+      h1 {
+        font-size: clamp(34px, 6.2vw, 58px); font-weight: 500; line-height: 1.06;
+        letter-spacing: -0.015em; margin: 0 0 16px; max-width: 16ch;
+      }
+      .hero p.lede { font-size: clamp(16px, 2.4vw, 19px); color: var(--ink-70); max-width: 62ch; margin: 0; }
+      .hero-figure { margin: 40px 0 6px; border-top: 1px solid var(--ink-18); padding-top: 26px; }
+      .hero-figure .fig-label { font-size: 12px; text-transform: uppercase; color: var(--ink-70); margin: 0 0 6px; }
+      .hero-figure .fig-value {
+        font-family: "Geist Mono", ui-monospace, monospace;
+        font-size: clamp(42px, 9vw, 84px); font-weight: 400; line-height: 1; letter-spacing: -0.01em;
+      }
+      .hero-figure .fig-value .unit { font-size: 0.38em; color: var(--ink-55); letter-spacing: 0.06em; }
+      .hero-figure .fig-sub { color: var(--ink-70); margin: 10px 0 0; max-width: 60ch; }
+
+      /* ——— Stat ledger ——— */
+      .ledger {
+        display: grid; grid-template-columns: repeat(2, 1fr);
+        border-top: 2px solid var(--ink); margin-top: 40px;
+      }
+      .cell { padding: 20px 18px 22px 0; border-bottom: 1px solid var(--ink-18); }
+      .cell:nth-child(odd) { border-right: 1px solid var(--ink-18); padding-right: 18px; }
+      .cell:nth-child(even) { padding-left: 18px; }
+      .cell .lab { font-size: 11px; text-transform: uppercase; color: var(--ink-70); margin: 0 0 8px; }
+      .cell .val { font-family: "Geist Mono", ui-monospace, monospace; font-size: clamp(24px, 4.6vw, 34px); line-height: 1.1; }
+      .cell .sub { color: var(--ink-55); font-size: 13.5px; margin: 7px 0 0; }
+      @media (min-width: 760px) {
+        .ledger { grid-template-columns: repeat(3, 1fr); }
+        .cell { border-right: 1px solid var(--ink-18); padding-left: 18px; }
+        .cell:nth-child(3n) { border-right: none; }
+        .cell:nth-child(3n+1) { padding-left: 0; }
+      }
+
+      /* ——— Sections ——— */
+      section { margin-top: 56px; }
+      .sec-head { border-top: 2px solid var(--ink); padding-top: 16px; margin-bottom: 8px;
+        display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 18px; }
+      .sec-head h2 { font-size: clamp(22px, 3.6vw, 30px); font-weight: 500; margin: 0; letter-spacing: -0.01em; }
+      .sec-head .mono { font-size: 11px; text-transform: uppercase; color: var(--ink-70); }
+      .sec-intro { color: var(--ink-70); max-width: 66ch; margin: 6px 0 0; }
+
+      .range-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 20px 0 6px; }
+      .range-btn {
+        min-height: 40px; padding: 7px 18px; border: 1px solid var(--ink-35); border-radius: 999px;
+        background: transparent; cursor: pointer; font-size: 13px;
+        font-family: "Geist Mono", ui-monospace, monospace; letter-spacing: 0.05em;
+      }
+      .range-btn[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+      .chg { font-size: 13px; color: var(--ink-70); }
+      .chg b { font-family: "Geist Mono", ui-monospace, monospace; font-weight: 400; color: var(--down); }
+      .chart-box { border: 1px solid var(--ink-18); background: var(--paper-raise); padding: 14px 10px 6px; margin-top: 10px; }
+      .chart-box svg { display: block; width: 100%; height: auto; }
+      .chart-axis { font-family: "Geist Mono", ui-monospace, monospace; font-size: 10.5px; fill: var(--ink-55); letter-spacing: 0.03em; }
+      .ath-row { margin-top: 22px; }
+      .ath-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; font-size: 13.5px; color: var(--ink-70); }
+      .ath-meta .mono { color: var(--ink); }
+      .ath-track { height: 10px; background: var(--ink-10); margin-top: 8px; position: relative; }
+      .ath-fill { position: absolute; inset: 0 auto 0 0; background: var(--chart); }
+
+      /* ——— Points ——— */
+      .status-note {
+        border: 1px solid var(--ink-35); padding: 20px 22px; margin-top: 20px; background: var(--paper-raise);
+      }
+      .status-note h3 { margin: 0 0 8px; font-size: 18px; font-weight: 500; }
+      .status-note p { margin: 0; color: var(--ink-70); max-width: 68ch; }
+      .tracker { margin-top: 28px; }
+      .tracker h3 { font-size: 18px; font-weight: 500; margin: 0 0 4px; }
+      .tracker .note { color: var(--ink-55); font-size: 13.5px; margin: 0 0 16px; }
+      .tform { display: grid; gap: 12px; grid-template-columns: 1fr; }
+      @media (min-width: 760px) { .tform { grid-template-columns: 1.1fr 0.7fr 1.4fr auto; align-items: end; } }
+      .tform label { display: block; font-size: 11px; text-transform: uppercase; color: var(--ink-70); margin-bottom: 6px;
+        font-family: "Geist Mono", ui-monospace, monospace; letter-spacing: 0.05em; }
+      .tform input, .tform select { width: 100%; min-height: 44px; padding: 8px 10px;
+        background: var(--field); border: 1px solid var(--ink-35); border-radius: 4px; }
+      .add-btn {
+        min-height: 44px; padding: 9px 22px; background: var(--ink); color: var(--paper);
+        border: 1px solid var(--ink); border-radius: 4px; cursor: pointer; font-weight: 500; white-space: nowrap;
+      }
+      .tlist { margin-top: 20px; border-top: 1px solid var(--ink-18); }
+      .trow { display: grid; grid-template-columns: 1fr auto; gap: 4px 14px; padding: 12px 0; border-bottom: 1px solid var(--ink-18); align-items: center; }
+      @media (min-width: 640px) { .trow { grid-template-columns: 150px 110px 1fr auto; } }
+      .trow .plat { font-weight: 500; }
+      .trow .pts { font-family: "Geist Mono", ui-monospace, monospace; }
+      .trow .tnote { color: var(--ink-55); font-size: 14px; }
+      .del-btn { min-height: 36px; min-width: 36px; padding: 6px 12px; background: transparent;
+        border: 1px solid var(--ink-35); border-radius: 4px; cursor: pointer; font-size: 13px; }
+      .ttotal { display: flex; justify-content: space-between; align-items: baseline; padding: 16px 0 0; }
+      .ttotal .lab { font-size: 11px; text-transform: uppercase; color: var(--ink-70); }
+      .ttotal .val { font-family: "Geist Mono", ui-monospace, monospace; font-size: 28px; }
+      .empty { color: var(--ink-55); padding: 16px 0; margin: 0; }
+
+      /* ——— About / how ——— */
+      .earn { border-top: 1px solid var(--ink-18); margin-top: 20px; }
+      .earn-row { display: grid; gap: 4px 24px; padding: 18px 0; border-bottom: 1px solid var(--ink-18); }
+      @media (min-width: 700px) { .earn-row { grid-template-columns: 52px 220px 1fr; } }
+      .earn-row .num { font-family: "Geist Mono", ui-monospace, monospace; color: var(--ink-55); font-size: 13px; padding-top: 3px; }
+      .earn-row h3 { margin: 0; font-size: 17px; font-weight: 500; }
+      .earn-row p { margin: 0; color: var(--ink-70); max-width: 62ch; }
+      .steps { counter-reset: step; margin: 20px 0 0; padding: 0; list-style: none; }
+      .steps li { padding: 14px 0 14px 0; border-bottom: 1px solid var(--ink-18); display: flex; gap: 16px; align-items: baseline; }
+      .steps .n { font-family: "Geist Mono", ui-monospace, monospace; color: var(--ink-55); font-size: 13px; flex: none; }
+      .cta {
+        display: inline-flex; align-items: center; gap: 10px; margin-top: 24px;
+        background: var(--ink); color: var(--paper); text-decoration: none;
+        padding: 13px 26px; border-radius: 4px; font-weight: 500; min-height: 48px;
+      }
+      .cta:hover { background: var(--deep); }
+      @media (prefers-color-scheme: dark) { .cta:hover { background: var(--ink-70); } }
+
+      /* ——— Sources / footer ——— */
+      .sources { margin-top: 56px; border-top: 2px solid var(--ink); padding-top: 16px; }
+      .sources h2 { font-size: 20px; font-weight: 500; margin: 0 0 12px; }
+      .sources ul { margin: 0; padding: 0; list-style: none; }
+      .sources li { padding: 9px 0; border-bottom: 1px solid var(--ink-18); display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; }
+      .sources .sname { font-weight: 500; min-width: 130px; }
+      .sources a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
+      .sources .sdesc { color: var(--ink-55); font-size: 13.5px; flex-basis: 100%; }
+      footer { margin-top: 44px; border-top: 1px solid var(--ink-18); padding-top: 18px;
+        color: var(--ink-55); font-size: 13.5px; display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; }
+      a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible {
+        outline: 2px solid var(--chart); outline-offset: 2px;
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .ath-fill { transition: width 0.8s ease; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="topbar">
+        <div class="wordmark">RAIKU<small data-i18n="wordmarkSub">RKUSOL · STAKING LEDGER</small></div>
+        <span class="snap-badge"><span class="dot" aria-hidden="true"></span><span class="mono" id="snapBadge">Snapshot · 25 Nov 2026</span></span>
+        <div class="langbox">
+          <label for="langSel" class="mono" data-i18n="langLabel">Language</label>
+          <select id="langSel" aria-label="Language">
+            <option value="en" selected>English</option>
+            <option value="id">Bahasa Indonesia</option>
+            <option value="hi">हिन्दी</option>
+            <option value="zh">中文（简体）</option>
+            <option value="th">ไทย</option>
+            <option value="vi">Tiếng Việt</option>
+            <option value="ru">Русский</option>
+            <option value="sw">Kiswahili</option>
+            <option value="ha">Hausa</option>
+            <option value="yo">Yorùbá</option>
+            <option value="am">አማርኛ</option>
+            <option value="zu">isiZulu</option>
+          </select>
+        </div>
+      </div>
+
+      <header class="hero">
+        <p class="kicker mono" data-i18n="kicker">Raiku · Liquid staking on Solana</p>
+        <h1 data-i18n="heroTitle">Every SOL staked with Raiku, in plain sight.</h1>
+        <p class="lede" data-i18n="heroSub">rkuSOL is Raiku's liquid staking token. This public page tracks how much SOL is staked behind it, what the pool is worth, how many wallets hold it, and how the total has moved since launch — all from public, verifiable sources.</p>
+        <div class="hero-figure">
+          <p class="fig-label mono" data-i18n="statStaked">Total SOL staked</p>
+          <div class="fig-value"><span id="figStaked">181,837</span> <span class="unit">SOL</span></div>
+          <p class="fig-sub" data-i18n="heroFigSub">Staked through Raiku's validator pool and represented by rkuSOL — a token that keeps earning while it stays liquid across Solana DeFi.</p>
+        </div>
+      </header>
+
+      <div class="ledger" role="list">
+        <div class="cell" role="listitem">
+          <p class="lab mono" data-i18n="statTvl">Total value locked</p>
+          <div class="val" id="statTvl">$12,294,497</div>
+          <p class="sub" data-i18n="statTvlSub">US dollar value of the stake pool (DefiLlama).</p>
+        </div>
+        <div class="cell" role="listitem">
+          <p class="lab mono" data-i18n="statHolders">Total holders</p>
+          <div class="val" id="statHolders">1,076</div>
+          <p class="sub" data-i18n="statHoldersSub">Wallets holding rkuSOL (Phantom).</p>
+        </div>
+        <div class="cell" role="listitem">
+          <p class="lab mono" data-i18n="statSupply">rkuSOL supply</p>
+          <div class="val" id="statSupply">177,630</div>
+          <p class="sub" data-i18n="statSupplySub">Tokens in circulation (Phantom).</p>
+        </div>
+        <div class="cell" role="listitem">
+          <p class="lab mono" data-i18n="statApy">Staking APY</p>
+          <div class="val" id="statApy">4.90%</div>
+          <p class="sub" data-i18n="statApySub">Realised yield over the last 10 epochs (Sanctum).</p>
+        </div>
+        <div class="cell" role="listitem">
+          <p class="lab mono" data-i18n="statRate">Exchange rate</p>
+          <div class="val" id="statRate">1.0237</div>
+          <p class="sub" data-i18n="statRateSub">SOL per 1 rkuSOL, implied by stake ÷ supply.</p>
+        </div>
+        <div class="cell" role="listitem">
+          <p class="lab mono" data-i18n="statPrice">rkuSOL price</p>
+          <div class="val" id="statPrice">$69.21</div>
+          <p class="sub" data-i18n="statPriceSub">Implied by TVL ÷ supply (DefiLlama, Phantom).</p>
+        </div>
+      </div>
+
+      <section aria-labelledby="chartH">
+        <div class="sec-head">
+          <h2 id="chartH" data-i18n="chartTitle">Staking progress</h2>
+          <span class="mono" data-i18n="chartTag">TVL · USD · Daily</span>
+        </div>
+        <p class="sec-intro" data-i18n="chartIntro">The pool's total value locked, day by day, since DefiLlama began tracking Raiku Staked SOL on 19 September 2026.</p>
+        <div class="range-row">
+          <button type="button" class="range-btn" id="btn30" aria-pressed="false" data-i18n="range30">Last 30 days</button>
+          <button type="button" class="range-btn" id="btnAll" aria-pressed="true" data-i18n="rangeAll">All time</button>
+          <span class="chg"><span data-i18n="chg30Label">30-day change</span> <b id="chg30">−32.4%</b></span>
+          <span class="chg"><span data-i18n="chg7Label">7-day change</span> <b id="chg7">−7.2%</b></span>
+        </div>
+        <div class="chart-box" id="chartBox" role="img" aria-label="Line chart of rkuSOL total value locked in US dollars, September to November 2026"></div>
+        <div class="ath-row">
+          <div class="ath-meta">
+            <span><span data-i18n="athNow">Now</span> <span class="mono" id="athNowVal">$12.29M</span></span>
+            <span><span data-i18n="athOf">of all-time high</span> <span class="mono" id="athPct">55.6%</span></span>
+            <span><span data-i18n="athHigh">All-time high</span> <span class="mono" id="athHighVal">$22.10M · 26 Sep 2026</span></span>
+          </div>
+          <div class="ath-track"><div class="ath-fill" id="athFill" style="width:55.6%"></div></div>
+        </div>
+      </section>
+
+      <section aria-labelledby="pointsH">
+        <div class="sec-head">
+          <h2 id="pointsH" data-i18n="pointsTitle">Holder points</h2>
+          <span class="mono" data-i18n="pointsTag">Farming · Status</span>
+        </div>
+        <div class="status-note">
+          <h3 data-i18n="pointsStatusTitle">No official points programme — yet</h3>
+          <p data-i18n="pointsStatusBody">As of this snapshot, Raiku runs no public points programme for rkuSOL holders, and no points total is published anywhere official. What holders earn today is yield: the APY above, paid through a rising rkuSOL exchange rate. If Raiku announces a points programme, it will appear on Raiku's official channels first — treat any unofficial points claim with caution.</p>
+        </div>
+        <div class="tracker">
+          <h3 data-i18n="trackerTitle">Your own points log</h3>
+          <p class="note" data-i18n="trackerNote">Farming points on platforms that reward rkuSOL activity? Keep a running tally here. Entries live only while this page is open — nothing is saved or sent anywhere.</p>
+          <form class="tform" id="tform">
+            <div>
+              <label for="fPlatform" data-i18n="platformLabel">Platform</label>
+              <select id="fPlatform">
+                <option>Sanctum</option>
+                <option>Kamino</option>
+                <option>Exponent</option>
+                <option>Loopscale</option>
+                <option>Jupiter</option>
+                <option>Discord</option>
+                <option data-i18n="optOther">Other</option>
+              </select>
+            </div>
+            <div>
+              <label for="fPoints" data-i18n="pointsLabel">Points</label>
+              <input id="fPoints" type="number" min="0" step="any" inputmode="decimal" required placeholder="0" />
+            </div>
+            <div>
+              <label for="fNote" data-i18n="noteLabel">Note (optional)</label>
+              <input id="fNote" type="text" maxlength="80" placeholder="…" />
+            </div>
+            <button type="submit" class="add-btn" data-i18n="addBtn">Add entry</button>
+          </form>
+          <div class="tlist" id="tlist">
+            <p class="empty" data-i18n="emptyLog">No entries yet.</p>
+          </div>
+          <div class="ttotal">
+            <span class="lab mono" data-i18n="totalPoints">Total points logged</span>
+            <span class="val" id="ttotalVal">0</span>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="aboutH">
+        <div class="sec-head">
+          <h2 id="aboutH" data-i18n="aboutTitle">Where the yield comes from</h2>
+          <span class="mono" data-i18n="aboutTag">rkuSOL · Earnings</span>
+        </div>
+        <p class="sec-intro" data-i18n="aboutIntro">A conventional liquid staking token earns from inflation rewards and, at best, MEV. rkuSOL stacks a third source on top: the revenue of Raiku's blockspace coordination auctions.</p>
+        <div class="earn">
+          <div class="earn-row">
+            <span class="num">01</span>
+            <h3 data-i18n="earn1T">Staking rewards</h3>
+            <p data-i18n="earn1B">SOL staked with Raiku's validator earns Solana's network inflation rewards. The validator charges 0% commission and 0% MEV commission, so rewards pass through to stakers in full.</p>
+          </div>
+          <div class="earn-row">
+            <span class="num">02</span>
+            <h3 data-i18n="earn2T">MEV</h3>
+            <p data-i18n="earn2B">Maximal extractable value captured by the validator while producing blocks is shared with the pool, lifting the rkuSOL exchange rate over time.</p>
+          </div>
+          <div class="earn-row">
+            <span class="num">03</span>
+            <h3 data-i18n="earn3T">Auction revenue</h3>
+            <p data-i18n="earn3B">Raiku sells guaranteed blockspace through Ahead-of-Time (AOT) and Just-in-Time (JIT) auctions to trading firms that need certain inclusion. That coordination revenue flows back to rkuSOL holders — a first for a Solana LST.</p>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="howH">
+        <div class="sec-head">
+          <h2 id="howH" data-i18n="howTitle">Stake in three steps</h2>
+          <span class="mono" data-i18n="howTag">stake.raiku.com</span>
+        </div>
+        <ol class="steps">
+          <li><span class="n">01</span><span data-i18n="step1">Open stake.raiku.com and connect a Solana wallet such as Phantom or Solflare.</span></li>
+          <li><span class="n">02</span><span data-i18n="step2">Enter the amount of SOL to stake and confirm. You receive rkuSOL in return, at the day's exchange rate.</span></li>
+          <li><span class="n">03</span><span data-i18n="step3">Hold rkuSOL to earn, use it across Solana DeFi, or unstake back to SOL at any time from the same page.</span></li>
+        </ol>
+        <a class="cta" href="https://stake.raiku.com/" target="_blank" rel="noopener"><span data-i18n="stakeBtn">Stake at stake.raiku.com</span><span aria-hidden="true">→</span></a>
+      </section>
+
+      <div class="sources">
+        <h2 data-i18n="sourcesTitle">Sources</h2>
+        <ul>
+          <li>
+            <span class="sname">DefiLlama</span>
+            <a href="https://defillama.com/protocol/raiku-staked-sol" target="_blank" rel="noopener">defillama.com/protocol/raiku-staked-sol</a>
+            <span class="sdesc" data-i18n="srcLlama">TVL today and the full daily TVL history, including the all-time high.</span>
+          </li>
+          <li>
+            <span class="sname">Phantom</span>
+            <a href="https://phantom.com/tokens/solana/rkubjTrZYioRSeXwDnhwGQzvW3qkcin72JSxUt3WMVp" target="_blank" rel="noopener">phantom.com/tokens/solana/rkubj…WMVp</a>
+            <span class="sdesc" data-i18n="srcPhantom">Holder count and circulating supply of the rkuSOL mint.</span>
+          </li>
+          <li>
+            <span class="sname">Sanctum</span>
+            <span class="mono" style="font-size:13px">app.sanctum.so</span>
+            <span class="sdesc" data-i18n="srcSanctum">Realised APY for rkuSOL over the last 10 epochs.</span>
+          </li>
+          <li>
+            <span class="sname">Raiku</span>
+            <a href="https://stake.raiku.com/" target="_blank" rel="noopener">stake.raiku.com</a>
+            <span class="sdesc" data-i18n="srcRaiku">Raiku's official staking page — total SOL staked and the live exchange rate.</span>
+          </li>
+          <li>
+            <span class="sname">Solana Compass</span>
+            <a href="https://solanacompass.com/validators/AVD61fbwxDGuLGCanPWQPxRjdqYk3icssz5u7JH8kbta" target="_blank" rel="noopener">solanacompass.com/validators/AVD6…kbta</a>
+            <span class="sdesc" data-i18n="srcCompass">Validator profile: commission, uptime and performance.</span>
+          </li>
+          <li>
+            <span class="sname" data-i18n="srcBrandName">Brand</span>
+            <a href="https://raiku.com/brand-assets" target="_blank" rel="noopener">raiku.com/brand-assets</a>
+            <span class="sdesc" data-i18n="srcBrand">This page's colours and type follow Raiku's official brand kit: Paper, Ink and Geist.</span>
+          </li>
+        </ul>
+      </div>
+
+      <footer>
+        <span data-i18n="footerLeft">An independent community dashboard. Not affiliated with Raiku.</span>
+        <span class="mono" id="footerSnap">SNAPSHOT · 25 NOV 2026 · 23:36 WIB (UTC+7)</span>
+      </footer>
+    </div>
+
+    <script>
+      /* ——— Baked snapshot, fetched 25 Nov 2026, 23:36 WIB (UTC+7) ———
+         TVL series + current TVL: DefiLlama API (api.llama.fi/protocol/raiku-staked-sol).
+         Holders + supply: Phantom token page, 25 Nov 2026.
+         Total SOL staked + APY: stake.raiku.com / Sanctum, 25 Nov 2026. */
+      var SNAP = {
+        asOf: "25 Nov 2026",
+        stakedSOL: 181837.41,
+        tvlUSD: 12294497,
+        holders: 1076,
+        supply: 177630,
+        apy: 4.90,
+        athUSD: 22103119,
+        athDate: "26 Sep 2026"
+      };
+      /* Daily TVL in USD, 19 Sep – 25 Nov 2026 (DefiLlama). */
+      var TVL = [
+        ["2026-09-19",20569125],["2026-09-20",20119615],["2026-09-21",20113909],["2026-09-22",21311443],
+        ["2026-09-23",21404503],["2026-09-24",20822376],["2026-09-25",21228548],["2026-09-26",22103119],
+        ["2026-09-27",21891231],["2026-09-28",21968608],["2026-09-29",21470331],["2026-09-30",21687713],
+        ["2026-10-01",21447837],["2026-10-02",21537690],["2026-10-03",21610088],["2026-10-04",21685222],
+        ["2026-10-05",22021318],["2026-10-06",21923784],["2026-10-07",21843095],["2026-10-08",21098604],
+        ["2026-10-09",19809512],["2026-10-10",19846045],["2026-10-11",19960401],["2026-10-12",20225304],
+        ["2026-10-13",18994261],["2026-10-14",19365884],["2026-10-15",18923769],["2026-10-16",19061042],
+        ["2026-10-17",18811115],["2026-10-18",18692203],["2026-10-19",18827624],["2026-10-20",18818817],
+        ["2026-10-21",19190425],["2026-10-22",19132921],["2026-10-23",18647274],["2026-10-24",18402481],
+        ["2026-10-25",18451117],["2026-10-26",18282316],["2026-10-27",18198697],["2026-10-28",18250667],
+        ["2026-10-29",18431353],["2026-10-30",17093101],["2026-10-31",17359969],["2026-11-01",17217657],
+        ["2026-11-02",16910548],["2026-11-03",16473095],["2026-11-04",16256926],["2026-11-05",16830809],
+        ["2026-11-06",15811479],["2026-11-07",15925215],["2026-11-08",15793046],["2026-11-09",15397785],
+        ["2026-11-10",15350261],["2026-11-11",14867378],["2026-11-12",14788742],["2026-11-13",14529574],
+        ["2026-11-14",13984641],["2026-11-15",12296159],["2026-11-16",12779451],["2026-11-17",12813123],
+        ["2026-11-18",13481201],["2026-11-19",13245536],["2026-11-20",13134863],["2026-11-21",12377029],
+        ["2026-11-22",12769624],["2026-11-23",12831105],["2026-11-24",13099055],["2026-11-25",12294497]
+      ];
+    </script>
+    <script>
+      var MONTHS = {
+        en:["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
+        id:["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"],
+        hi:["जन","फ़र","मार्च","अप्रैल","मई","जून","जुलाई","अग","सितं","अक्टू","नवं","दिसं"],
+        zh:["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"],
+        th:["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."],
+        vi:["thg 1","thg 2","thg 3","thg 4","thg 5","thg 6","thg 7","thg 8","thg 9","thg 10","thg 11","thg 12"],
+        ru:["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"],
+        sw:["Jan","Feb","Mac","Apr","Mei","Jun","Jul","Ago","Sep","Okt","Nov","Des"],
+        ha:["Jan","Fab","Mar","Afr","Mayu","Yun","Yul","Agu","Sat","Okt","Nuw","Dis"],
+        yo:["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
+        am:["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
+        zu:["Jan","Feb","Mashi","Apr","Meyi","Juni","Julayi","Agasti","Sep","Okth","Nove","Dis"]
+      };
+      var LOCALES = { en:"en-US", id:"id-ID", hi:"hi-IN", zh:"zh-CN", th:"th-TH", vi:"vi-VN", ru:"ru-RU", sw:"sw-KE", ha:"ha-NG", yo:"yo-NG", am:"am-ET", zu:"zu-ZA" };
+      var I18N = {
+        en: {
+          snapBadge:"Snapshot · 25 Nov 2026", footerSnap:"SNAPSHOT · 25 NOV 2026 · 23:36 WIB (UTC+7)",
+          wordmarkSub:"RKUSOL · STAKING LEDGER", langLabel:"Language",
+          kicker:"Raiku · Liquid staking on Solana",
+          heroTitle:"Every SOL staked with Raiku, in plain sight.",
+          heroSub:"rkuSOL is Raiku's liquid staking token. This public page tracks how much SOL is staked behind it, what the pool is worth, how many wallets hold it, and how the total has moved since launch — all from public, verifiable sources.",
+          statStaked:"Total SOL staked",
+          heroFigSub:"Staked through Raiku's validator pool and represented by rkuSOL — a token that keeps earning while it stays liquid across Solana DeFi.",
+          statTvl:"Total value locked", statTvlSub:"US dollar value of the stake pool (DefiLlama).",
+          statHolders:"Total holders", statHoldersSub:"Wallets holding rkuSOL (Phantom).",
+          statSupply:"rkuSOL supply", statSupplySub:"Tokens in circulation (Phantom).",
+          statApy:"Staking APY", statApySub:"Realised yield over the last 10 epochs (Sanctum).",
+          statRate:"Exchange rate", statRateSub:"SOL per 1 rkuSOL, implied by stake ÷ supply.",
+          statPrice:"rkuSOL price", statPriceSub:"Implied by TVL ÷ supply (DefiLlama, Phantom).",
+          chartTitle:"Staking progress", chartTag:"TVL · USD · Daily",
+          chartIntro:"The pool's total value locked, day by day, since DefiLlama began tracking Raiku Staked SOL on 19 September 2026.",
+          range30:"Last 30 days", rangeAll:"All time", chg30Label:"30-day change", chg7Label:"7-day change",
+          athNow:"Now", athOf:"of all-time high", athHigh:"All-time high",
+          pointsTitle:"Holder points", pointsTag:"Farming · Status",
+          pointsStatusTitle:"No official points programme — yet",
+          pointsStatusBody:"As of this snapshot, Raiku runs no public points programme for rkuSOL holders, and no points total is published anywhere official. What holders earn today is yield: the APY above, paid through a rising rkuSOL exchange rate. If Raiku announces a points programme, it will appear on Raiku's official channels first — treat any unofficial points claim with caution.",
+          trackerTitle:"Your own points log",
+          trackerNote:"Farming points on platforms that reward rkuSOL activity? Keep a running tally here. Entries live only while this page is open — nothing is saved or sent anywhere.",
+          platformLabel:"Platform", pointsLabel:"Points", noteLabel:"Note (optional)", addBtn:"Add entry",
+          optOther:"Other", emptyLog:"No entries yet.", totalPoints:"Total points logged", deleteLabel:"Delete",
+          aboutTitle:"Where the yield comes from", aboutTag:"rkuSOL · Earnings",
+          aboutIntro:"A conventional liquid staking token earns from inflation rewards and, at best, MEV. rkuSOL stacks a third source on top: the revenue of Raiku's blockspace coordination auctions.",
+          earn1T:"Staking rewards",
+          earn1B:"SOL staked with Raiku's validator earns Solana's network inflation rewards. The validator charges 0% commission and 0% MEV commission, so rewards pass through to stakers in full.",
+          earn2T:"MEV",
+          earn2B:"Maximal extractable value captured by the validator while producing blocks is shared with the pool, lifting the rkuSOL exchange rate over time.",
+          earn3T:"Auction revenue",
+          earn3B:"Raiku sells guaranteed blockspace through Ahead-of-Time (AOT) and Just-in-Time (JIT) auctions to trading firms that need certain inclusion. That coordination revenue flows back to rkuSOL holders — a first for a Solana LST.",
+          howTitle:"Stake in three steps", howTag:"stake.raiku.com",
+          step1:"Open stake.raiku.com and connect a Solana wallet such as Phantom or Solflare.",
+          step2:"Enter the amount of SOL to stake and confirm. You receive rkuSOL in return, at the day's exchange rate.",
+          step3:"Hold rkuSOL to earn, use it across Solana DeFi, or unstake back to SOL at any time from the same page.",
+          stakeBtn:"Stake at stake.raiku.com", sourcesTitle:"Sources",
+          srcLlama:"TVL today and the full daily TVL history, including the all-time high.",
+          srcPhantom:"Holder count and circulating supply of the rkuSOL mint.",
+          srcSanctum:"Realised APY for rkuSOL over the last 10 epochs.",
+          srcRaiku:"Raiku's official staking page — total SOL staked and the live exchange rate.",
+          srcCompass:"Validator profile: commission, uptime and performance.",
+          srcBrandName:"Brand",
+          srcBrand:"This page's colours and type follow Raiku's official brand kit: Paper, Ink and Geist.",
+          footerLeft:"An independent community dashboard. Not affiliated with Raiku.",
+          chartAria:"Line chart of rkuSOL total value locked in US dollars"
+        },
+        id: {
+          snapBadge:"Cuplikan · 25 Nov 2026", footerSnap:"CUPLIKAN · 25 NOV 2026 · 23:36 WIB (UTC+7)",
+          wordmarkSub:"RKUSOL · CATATAN STAKING", langLabel:"Bahasa",
+          kicker:"Raiku · Liquid staking di Solana",
+          heroTitle:"Semua SOL yang di-stake di Raiku, terbuka untuk semua.",
+          heroSub:"rkuSOL adalah token liquid staking dari Raiku. Halaman publik ini memantau berapa SOL yang di-stake di belakangnya, berapa nilai pool-nya, berapa dompet yang memegangnya, dan bagaimana totalnya bergerak sejak peluncuran — semuanya dari sumber publik yang bisa diverifikasi.",
+          statStaked:"Total SOL ter-stake",
+          heroFigSub:"Di-stake lewat pool validator Raiku dan diwakili oleh rkuSOL — token yang terus menghasilkan sambil tetap likuid di seluruh DeFi Solana.",
+          statTvl:"Total nilai terkunci (TVL)", statTvlSub:"Nilai pool staking dalam dolar AS (DefiLlama).",
+          statHolders:"Total holder", statHoldersSub:"Dompet yang memegang rkuSOL (Phantom).",
+          statSupply:"Suplai rkuSOL", statSupplySub:"Token yang beredar (Phantom).",
+          statApy:"APY staking", statApySub:"Imbal hasil terealisasi 10 epoch terakhir (Sanctum).",
+          statRate:"Kurs tukar", statRateSub:"SOL per 1 rkuSOL, tersirat dari stake ÷ suplai.",
+          statPrice:"Harga rkuSOL", statPriceSub:"Tersirat dari TVL ÷ suplai (DefiLlama, Phantom).",
+          chartTitle:"Progres staking", chartTag:"TVL · USD · Harian",
+          chartIntro:"Total nilai terkunci pool ini, hari demi hari, sejak DefiLlama mulai melacak Raiku Staked SOL pada 19 September 2026.",
+          range30:"30 hari terakhir", rangeAll:"Semua waktu", chg30Label:"Perubahan 30 hari", chg7Label:"Perubahan 7 hari",
+          athNow:"Sekarang", athOf:"dari rekor tertinggi", athHigh:"Rekor tertinggi",
+          pointsTitle:"Poin holder", pointsTag:"Farming · Status",
+          pointsStatusTitle:"Belum ada program poin resmi",
+          pointsStatusBody:"Per cuplikan ini, Raiku belum menjalankan program poin publik untuk holder rkuSOL, dan tidak ada total poin yang diterbitkan di kanal resmi mana pun. Yang diperoleh holder saat ini adalah imbal hasil: APY di atas, dibayarkan lewat kurs rkuSOL yang terus naik. Jika Raiku mengumumkan program poin, pengumumannya akan muncul pertama kali di kanal resmi Raiku — waspadai klaim poin tidak resmi.",
+          trackerTitle:"Catatan poinmu sendiri",
+          trackerNote:"Farming poin di platform yang memberi reward untuk aktivitas rkuSOL? Catat totalnya di sini. Entri hanya tersimpan selama halaman ini terbuka — tidak disimpan dan tidak dikirim ke mana pun.",
+          platformLabel:"Platform", pointsLabel:"Poin", noteLabel:"Catatan (opsional)", addBtn:"Tambah entri",
+          optOther:"Lainnya", emptyLog:"Belum ada entri.", totalPoints:"Total poin tercatat", deleteLabel:"Hapus",
+          aboutTitle:"Dari mana imbal hasilnya", aboutTag:"rkuSOL · Pendapatan",
+          aboutIntro:"Token liquid staking biasa menghasilkan dari reward inflasi dan, paling banter, MEV. rkuSOL menumpuk sumber ketiga di atasnya: pendapatan lelang koordinasi blockspace Raiku.",
+          earn1T:"Reward staking",
+          earn1B:"SOL yang di-stake di validator Raiku memperoleh reward inflasi jaringan Solana. Validator ini mengenakan komisi 0% dan komisi MEV 0%, jadi reward diteruskan utuh ke staker.",
+          earn2T:"MEV",
+          earn2B:"Maximal extractable value yang ditangkap validator saat memproduksi blok dibagikan ke pool, mengangkat kurs rkuSOL dari waktu ke waktu.",
+          earn3T:"Pendapatan lelang",
+          earn3B:"Raiku menjual blockspace bergaransi lewat lelang Ahead-of-Time (AOT) dan Just-in-Time (JIT) ke firma trading yang butuh kepastian masuk blok. Pendapatan koordinasi itu mengalir kembali ke holder rkuSOL — yang pertama untuk LST Solana.",
+          howTitle:"Stake dalam tiga langkah", howTag:"stake.raiku.com",
+          step1:"Buka stake.raiku.com dan hubungkan dompet Solana seperti Phantom atau Solflare.",
+          step2:"Masukkan jumlah SOL yang mau di-stake lalu konfirmasi. Kamu menerima rkuSOL sebagai gantinya, sesuai kurs hari itu.",
+          step3:"Pegang rkuSOL untuk menghasilkan, pakai di seluruh DeFi Solana, atau unstake kembali ke SOL kapan saja dari halaman yang sama.",
+          stakeBtn:"Stake di stake.raiku.com", sourcesTitle:"Sumber",
+          srcLlama:"TVL hari ini dan seluruh riwayat TVL harian, termasuk rekor tertingginya.",
+          srcPhantom:"Jumlah holder dan suplai beredar dari mint rkuSOL.",
+          srcSanctum:"APY terealisasi rkuSOL selama 10 epoch terakhir.",
+          srcRaiku:"Halaman staking resmi Raiku — total SOL ter-stake dan kurs live.",
+          srcCompass:"Profil validator: komisi, uptime, dan performa.",
+          srcBrandName:"Brand",
+          srcBrand:"Warna dan huruf halaman ini mengikuti brand kit resmi Raiku: Paper, Ink, dan Geist.",
+          footerLeft:"Dashboard komunitas independen. Tidak berafiliasi dengan Raiku.",
+          chartAria:"Grafik garis total nilai terkunci rkuSOL dalam dolar AS"
+        },
+        hi: {
+          snapBadge:"स्नैपशॉट · 25 नवंबर 2026", footerSnap:"स्नैपशॉट · 25 नवंबर 2026 · 23:36 WIB (UTC+7)",
+          wordmarkSub:"RKUSOL · स्टेकिंग खाता", langLabel:"भाषा",
+          kicker:"Raiku · Solana पर लिक्विड स्टेकिंग",
+          heroTitle:"Raiku के साथ स्टेक किया गया हर SOL, सबके सामने।",
+          heroSub:"rkuSOL, Raiku का लिक्विड स्टेकिंग टोकन है। यह सार्वजनिक पेज बताता है कि इसके पीछे कितना SOL स्टेक है, पूल की कीमत कितनी है, कितने वॉलेट इसे रखते हैं, और लॉन्च के बाद से कुल राशि कैसे बदली — सब सार्वजनिक, सत्यापन योग्य स्रोतों से।",
+          statStaked:"कुल स्टेक किया गया SOL",
+          heroFigSub:"Raiku के वैलिडेटर पूल के ज़रिए स्टेक किया गया और rkuSOL द्वारा दर्शाया गया — एक टोकन जो Solana DeFi में लिक्विड रहते हुए कमाई जारी रखता है।",
+          statTvl:"कुल लॉक्ड वैल्यू (TVL)", statTvlSub:"स्टेक पूल का अमेरिकी डॉलर मूल्य (DefiLlama)।",
+          statHolders:"कुल होल्डर", statHoldersSub:"rkuSOL रखने वाले वॉलेट (Phantom)।",
+          statSupply:"rkuSOL आपूर्ति", statSupplySub:"प्रचलन में टोकन (Phantom)।",
+          statApy:"स्टेकिंग APY", statApySub:"पिछले 10 epoch का वास्तविक यील्ड (Sanctum)।",
+          statRate:"विनिमय दर", statRateSub:"प्रति 1 rkuSOL SOL, स्टेक ÷ आपूर्ति से निहित।",
+          statPrice:"rkuSOL कीमत", statPriceSub:"TVL ÷ आपूर्ति से निहित (DefiLlama, Phantom)।",
+          chartTitle:"स्टेकिंग प्रगति", chartTag:"TVL · USD · दैनिक",
+          chartIntro:"पूल की कुल लॉक्ड वैल्यू, दिन-दर-दिन, जब से DefiLlama ने 19 सितंबर 2026 को Raiku Staked SOL को ट्रैक करना शुरू किया।",
+          range30:"पिछले 30 दिन", rangeAll:"सभी समय", chg30Label:"30-दिन का बदलाव", chg7Label:"7-दिन का बदलाव",
+          athNow:"अभी", athOf:"सर्वकालिक उच्चतम का", athHigh:"सर्वकालिक उच्चतम",
+          pointsTitle:"होल्डर पॉइंट्स", pointsTag:"फ़ार्मिंग · स्थिति",
+          pointsStatusTitle:"अभी तक कोई आधिकारिक पॉइंट्स कार्यक्रम नहीं",
+          pointsStatusBody:"इस स्नैपशॉट तक, Raiku rkuSOL होल्डर्स के लिए कोई सार्वजनिक पॉइंट्स कार्यक्रम नहीं चलाता, और कहीं भी आधिकारिक रूप से कोई पॉइंट्स कुल प्रकाशित नहीं है। आज होल्डर्स जो कमाते हैं वह यील्ड है: ऊपर दिया APY, बढ़ती rkuSOL विनिमय दर के ज़रिए दिया जाता है। यदि Raiku पॉइंट्स कार्यक्रम की घोषणा करता है, तो वह पहले Raiku के आधिकारिक चैनलों पर आएगा — किसी भी अनाधिकारिक पॉइंट्स दावे से सावधान रहें।",
+          trackerTitle:"आपका अपना पॉइंट्स लॉग",
+          trackerNote:"उन प्लेटफ़ॉर्म पर पॉइंट्स फ़ार्म कर रहे हैं जो rkuSOL गतिविधि को पुरस्कृत करते हैं? यहाँ अपना हिसाब रखें। प्रविष्टियाँ केवल तब तक रहती हैं जब तक यह पेज खुला है — कुछ भी सहेजा या कहीं भेजा नहीं जाता।",
+          platformLabel:"प्लेटफ़ॉर्म", pointsLabel:"पॉइंट्स", noteLabel:"नोट (वैकल्पिक)", addBtn:"प्रविष्टि जोड़ें",
+          optOther:"अन्य", emptyLog:"अभी कोई प्रविष्टि नहीं।", totalPoints:"कुल दर्ज पॉइंट्स", deleteLabel:"हटाएँ",
+          aboutTitle:"यील्ड कहाँ से आता है", aboutTag:"rkuSOL · कमाई",
+          aboutIntro:"एक सामान्य लिक्विड स्टेकिंग टोकन मुद्रास्फीति पुरस्कारों से और अधिक से अधिक MEV से कमाता है। rkuSOL इसके ऊपर तीसरा स्रोत जोड़ता है: Raiku की ब्लॉकस्पेस समन्वय नीलामी का राजस्व।",
+          earn1T:"स्टेकिंग पुरस्कार",
+          earn1B:"Raiku के वैलिडेटर के साथ स्टेक किया गया SOL, Solana के नेटवर्क मुद्रास्फीति पुरस्कार कमाता है। वैलिडेटर 0% कमीशन और 0% MEV कमीशन लेता है, इसलिए पुरस्कार पूरी तरह स्टेकर्स तक पहुँचते हैं।",
+          earn2T:"MEV",
+          earn2B:"ब्लॉक बनाते समय वैलिडेटर द्वारा पकड़ा गया अधिकतम निकालने योग्य मूल्य (MEV) पूल के साथ साझा किया जाता है, जिससे समय के साथ rkuSOL विनिमय दर बढ़ती है।",
+          earn3T:"नीलामी राजस्व",
+          earn3B:"Raiku, Ahead-of-Time (AOT) और Just-in-Time (JIT) नीलामियों के ज़रिए उन ट्रेडिंग फ़र्मों को गारंटीड ब्लॉकस्पेस बेचता है जिन्हें निश्चित समावेश चाहिए। वह समन्वय राजस्व rkuSOL होल्डर्स को वापस जाता है — Solana LST के लिए पहली बार।",
+          howTitle:"तीन चरणों में स्टेक करें", howTag:"stake.raiku.com",
+          step1:"stake.raiku.com खोलें और Phantom या Solflare जैसा Solana वॉलेट जोड़ें।",
+          step2:"स्टेक करने के लिए SOL की राशि डालें और पुष्टि करें। बदले में आपको उस दिन की विनिमय दर पर rkuSOL मिलता है।",
+          step3:"कमाने के लिए rkuSOL रखें, इसे Solana DeFi में उपयोग करें, या उसी पेज से कभी भी SOL में वापस अनस्टेक करें।",
+          stakeBtn:"stake.raiku.com पर स्टेक करें", sourcesTitle:"स्रोत",
+          srcLlama:"आज का TVL और पूरा दैनिक TVL इतिहास, सर्वकालिक उच्चतम सहित।",
+          srcPhantom:"rkuSOL मिंट की होल्डर संख्या और प्रचलित आपूर्ति।",
+          srcSanctum:"पिछले 10 epoch में rkuSOL का वास्तविक APY।",
+          srcRaiku:"Raiku का आधिकारिक स्टेकिंग पेज — कुल स्टेक SOL और लाइव विनिमय दर।",
+          srcCompass:"वैलिडेटर प्रोफ़ाइल: कमीशन, अपटाइम और प्रदर्शन।",
+          srcBrandName:"ब्रांड",
+          srcBrand:"इस पेज के रंग और अक्षर Raiku के आधिकारिक ब्रांड किट का पालन करते हैं: Paper, Ink और Geist।",
+          footerLeft:"एक स्वतंत्र सामुदायिक डैशबोर्ड। Raiku से संबद्ध नहीं।",
+          chartAria:"अमेरिकी डॉलर में rkuSOL कुल लॉक्ड वैल्यू का लाइन चार्ट"
+        },
+        zh: {
+          snapBadge:"快照 · 2026年11月25日", footerSnap:"快照 · 2026年11月25日 · 23:36 WIB (UTC+7)",
+          wordmarkSub:"RKUSOL · 质押账本", langLabel:"语言",
+          kicker:"Raiku · Solana 流动性质押",
+          heroTitle:"质押在 Raiku 的每一枚 SOL，一目了然。",
+          heroSub:"rkuSOL 是 Raiku 的流动性质押代币。本页面公开追踪其背后质押了多少 SOL、资金池价值几何、多少钱包持有它，以及自上线以来总量的变化——全部来自公开、可验证的来源。",
+          statStaked:"质押 SOL 总量",
+          heroFigSub:"通过 Raiku 验证者池质押，并由 rkuSOL 代表——这是一种在 Solana DeFi 中保持流动性的同时持续赚取收益的代币。",
+          statTvl:"总锁仓价值 (TVL)", statTvlSub:"质押池的美元价值（DefiLlama）。",
+          statHolders:"持有人总数", statHoldersSub:"持有 rkuSOL 的钱包（Phantom）。",
+          statSupply:"rkuSOL 供应量", statSupplySub:"流通中的代币（Phantom）。",
+          statApy:"质押年化收益率 (APY)", statApySub:"过去 10 个 epoch 的实际收益（Sanctum）。",
+          statRate:"汇率", statRateSub:"每 1 rkuSOL 对应的 SOL，由质押量 ÷ 供应量推算。",
+          statPrice:"rkuSOL 价格", statPriceSub:"由 TVL ÷ 供应量推算（DefiLlama、Phantom）。",
+          chartTitle:"质押进展", chartTag:"TVL · 美元 · 每日",
+          chartIntro:"自 DefiLlama 于 2026 年 9 月 19 日开始追踪 Raiku Staked SOL 以来，该池每日的总锁仓价值。",
+          range30:"最近 30 天", rangeAll:"全部时间", chg30Label:"30 天变化", chg7Label:"7 天变化",
+          athNow:"当前", athOf:"占历史最高点", athHigh:"历史最高点",
+          pointsTitle:"持有人积分", pointsTag:"挖分 · 状态",
+          pointsStatusTitle:"尚无官方积分计划",
+          pointsStatusBody:"截至本快照，Raiku 尚未为 rkuSOL 持有人推出任何公开积分计划，也没有任何官方渠道公布积分总量。持有人目前赚取的是收益：即上方的 APY，通过不断上升的 rkuSOL 汇率支付。如果 Raiku 宣布积分计划，消息会首先出现在其官方渠道——请警惕任何非官方的积分说法。",
+          trackerTitle:"你自己的积分记录",
+          trackerNote:"在奖励 rkuSOL 活动的平台上刷积分？在这里记录你的总数。条目仅在本页面打开期间存在——不会保存，也不会发送到任何地方。",
+          platformLabel:"平台", pointsLabel:"积分", noteLabel:"备注（可选）", addBtn:"添加条目",
+          optOther:"其他", emptyLog:"暂无条目。", totalPoints:"已记录积分总计", deleteLabel:"删除",
+          aboutTitle:"收益从何而来", aboutTag:"rkuSOL · 收益来源",
+          aboutIntro:"普通的流动性质押代币靠通胀奖励赚钱，最多再加上 MEV。rkuSOL 在此之上叠加了第三个来源：Raiku 区块空间协调拍卖的收入。",
+          earn1T:"质押奖励",
+          earn1B:"质押在 Raiku 验证者的 SOL 可赚取 Solana 网络通胀奖励。该验证者收取 0% 佣金和 0% MEV 佣金，因此奖励全额传递给质押者。",
+          earn2T:"MEV",
+          earn2B:"验证者在出块时捕获的最大可提取价值 (MEV) 会与资金池分享，从而随着时间推移推高 rkuSOL 的汇率。",
+          earn3T:"拍卖收入",
+          earn3B:"Raiku 通过提前 (AOT) 和即时 (JIT) 拍卖，向需要确定性上链的交易公司出售有保证的区块空间。这笔协调收入回流给 rkuSOL 持有人——这在 Solana LST 中尚属首例。",
+          howTitle:"三步完成质押", howTag:"stake.raiku.com",
+          step1:"打开 stake.raiku.com 并连接 Phantom 或 Solflare 等 Solana 钱包。",
+          step2:"输入要质押的 SOL 数量并确认。你将按当日汇率收到 rkuSOL。",
+          step3:"持有 rkuSOL 赚取收益、在 Solana DeFi 中使用它，或随时在同一页面取消质押换回 SOL。",
+          stakeBtn:"在 stake.raiku.com 质押", sourcesTitle:"来源",
+          srcLlama:"今日 TVL 及完整的每日 TVL 历史，包括历史最高点。",
+          srcPhantom:"rkuSOL 铸币的持有人数量和流通供应量。",
+          srcSanctum:"rkuSOL 过去 10 个 epoch 的实际 APY。",
+          srcRaiku:"Raiku 官方质押页面——质押 SOL 总量和实时汇率。",
+          srcCompass:"验证者资料：佣金、在线率和表现。",
+          srcBrandName:"品牌",
+          srcBrand:"本页面的颜色和字体遵循 Raiku 官方品牌套件：Paper、Ink 和 Geist。",
+          footerLeft:"独立的社区仪表板。与 Raiku 无隶属关系。",
+          chartAria:"rkuSOL 美元总锁仓价值折线图"
+        }
+      };
+      Object.assign(I18N, {
+        th: {
+          snapBadge:"ภาพรวม · 25 พ.ย. 2026", footerSnap:"ภาพรวม · 25 พ.ย. 2026 · 23:36 WIB (UTC+7)",
+          wordmarkSub:"RKUSOL · บัญชีสเตกกิ้ง", langLabel:"ภาษา",
+          kicker:"Raiku · ลิควิดสเตกกิ้งบน Solana",
+          heroTitle:"ทุก SOL ที่สเตกกับ Raiku เปิดเผยต่อสาธารณะ",
+          heroSub:"rkuSOL คือโทเคนลิควิดสเตกกิ้งของ Raiku หน้านี้ติดตามว่ามี SOL สเตกอยู่เบื้องหลังเท่าใด พูลมีมูลค่าเท่าใด มีวอลเล็ตถืออยู่กี่ใบ และยอดรวมเปลี่ยนแปลงอย่างไรตั้งแต่เปิดตัว — ทั้งหมดจากแหล่งข้อมูลสาธารณะที่ตรวจสอบได้",
+          statStaked:"SOL ที่สเตกทั้งหมด",
+          heroFigSub:"สเตกผ่านพูลผู้ตรวจสอบ (validator) ของ Raiku และแทนด้วย rkuSOL — โทเคนที่ยังสร้างผลตอบแทนขณะที่คงสภาพคล่องทั่ว DeFi ของ Solana",
+          statTvl:"มูลค่ารวมที่ล็อก (TVL)", statTvlSub:"มูลค่าพูลสเตกในสกุลเงินดอลลาร์สหรัฐ (DefiLlama)",
+          statHolders:"ผู้ถือทั้งหมด", statHoldersSub:"วอลเล็ตที่ถือ rkuSOL (Phantom)",
+          statSupply:"อุปทาน rkuSOL", statSupplySub:"โทเคนที่หมุนเวียนอยู่ (Phantom)",
+          statApy:"APY จากการสเตก", statApySub:"ผลตอบแทนจริงในช่วง 10 epoch ล่าสุด (Sanctum)",
+          statRate:"อัตราแลกเปลี่ยน", statRateSub:"SOL ต่อ 1 rkuSOL คำนวณจากยอดสเตก ÷ อุปทาน",
+          statPrice:"ราคา rkuSOL", statPriceSub:"คำนวณจาก TVL ÷ อุปทาน (DefiLlama, Phantom)",
+          chartTitle:"ความคืบหน้าการสเตก", chartTag:"TVL · USD · รายวัน",
+          chartIntro:"มูลค่ารวมที่ล็อกของพูล วันต่อวัน นับตั้งแต่ DefiLlama เริ่มติดตาม Raiku Staked SOL เมื่อ 19 กันยายน 2026",
+          range30:"30 วันล่าสุด", rangeAll:"ทั้งหมด", chg30Label:"เปลี่ยนแปลง 30 วัน", chg7Label:"เปลี่ยนแปลง 7 วัน",
+          athNow:"ตอนนี้", athOf:"ของจุดสูงสุดตลอดกาล", athHigh:"จุดสูงสุดตลอดกาล",
+          pointsTitle:"คะแนนของผู้ถือ", pointsTag:"การฟาร์ม · สถานะ",
+          pointsStatusTitle:"ยังไม่มีโปรแกรมคะแนนอย่างเป็นทางการ",
+          pointsStatusBody:"ณ ภาพรวมนี้ Raiku ยังไม่มีโปรแกรมคะแนนสาธารณะสำหรับผู้ถือ rkuSOL และไม่มีการเผยแพร่ยอดคะแนนรวมที่ใดอย่างเป็นทางการ สิ่งที่ผู้ถือได้รับในวันนี้คือผลตอบแทน: APY ด้านบน ซึ่งจ่ายผ่านอัตราแลกเปลี่ยน rkuSOL ที่เพิ่มขึ้น หาก Raiku ประกาศโปรแกรมคะแนน จะปรากฏบนช่องทางทางการของ Raiku ก่อน — โปรดระวังการอ้างคะแนนที่ไม่เป็นทางการ",
+          trackerTitle:"บันทึกคะแนนของคุณเอง",
+          trackerNote:"กำลังฟาร์มคะแนนบนแพลตฟอร์มที่ให้รางวัลกิจกรรม rkuSOL อยู่หรือ? จดยอดรวมไว้ที่นี่ รายการจะอยู่เฉพาะขณะที่หน้านี้เปิดอยู่ — ไม่มีการบันทึกหรือส่งไปที่ใด",
+          platformLabel:"แพลตฟอร์ม", pointsLabel:"คะแนน", noteLabel:"หมายเหตุ (ไม่บังคับ)", addBtn:"เพิ่มรายการ",
+          optOther:"อื่น ๆ", emptyLog:"ยังไม่มีรายการ", totalPoints:"คะแนนรวมที่บันทึก", deleteLabel:"ลบ",
+          aboutTitle:"ผลตอบแทนมาจากไหน", aboutTag:"rkuSOL · รายได้",
+          aboutIntro:"โทเคนลิควิดสเตกกิ้งทั่วไปสร้างรายได้จากรางวัลเงินเฟ้อ และอย่างมากก็ MEV ส่วน rkuSOL เพิ่มแหล่งที่สามไว้ด้านบน: รายได้จากการประมูลประสานงานพื้นที่บล็อกของ Raiku",
+          earn1T:"รางวัลการสเตก",
+          earn1B:"SOL ที่สเตกกับผู้ตรวจสอบของ Raiku จะได้รับรางวัลเงินเฟ้อของเครือข่าย Solana ผู้ตรวจสอบคิดค่าคอมมิชชัน 0% และค่าคอมมิชชัน MEV 0% รางวัลจึงส่งถึงผู้สเตกเต็มจำนวน",
+          earn2T:"MEV",
+          earn2B:"มูลค่าสูงสุดที่สกัดได้ (MEV) ที่ผู้ตรวจสอบจับได้ขณะสร้างบล็อก จะถูกแบ่งปันกับพูล ทำให้อัตราแลกเปลี่ยน rkuSOL สูงขึ้นตามเวลา",
+          earn3T:"รายได้จากการประมูล",
+          earn3B:"Raiku ขายพื้นที่บล็อกที่มีการรับประกันผ่านการประมูล Ahead-of-Time (AOT) และ Just-in-Time (JIT) ให้กับบริษัทเทรดที่ต้องการความแน่นอนในการเข้าบล็อก รายได้จากการประสานงานนั้นไหลกลับสู่ผู้ถือ rkuSOL — เป็นครั้งแรกสำหรับ LST บน Solana",
+          howTitle:"สเตกในสามขั้นตอน", howTag:"stake.raiku.com",
+          step1:"เปิด stake.raiku.com และเชื่อมต่อวอลเล็ต Solana เช่น Phantom หรือ Solflare",
+          step2:"ใส่จำนวน SOL ที่ต้องการสเตกและยืนยัน คุณจะได้รับ rkuSOL ตอบแทนตามอัตราแลกเปลี่ยนของวันนั้น",
+          step3:"ถือ rkuSOL เพื่อรับผลตอบแทน ใช้ทั่ว DeFi ของ Solana หรือถอนสเตกกลับเป็น SOL ได้ทุกเมื่อจากหน้าเดียวกัน",
+          stakeBtn:"สเตกที่ stake.raiku.com", sourcesTitle:"แหล่งข้อมูล",
+          srcLlama:"TVL วันนี้และประวัติ TVL รายวันทั้งหมด รวมถึงจุดสูงสุดตลอดกาล",
+          srcPhantom:"จำนวนผู้ถือและอุปทานหมุนเวียนของเหรียญ rkuSOL",
+          srcSanctum:"APY จริงของ rkuSOL ในช่วง 10 epoch ล่าสุด",
+          srcRaiku:"หน้าสเตกอย่างเป็นทางการของ Raiku — SOL ที่สเตกทั้งหมดและอัตราแลกเปลี่ยนแบบสด",
+          srcCompass:"โปรไฟล์ผู้ตรวจสอบ: ค่าคอมมิชชัน เวลาออนไลน์ และประสิทธิภาพ",
+          srcBrandName:"แบรนด์",
+          srcBrand:"สีและตัวอักษรของหน้านี้เป็นไปตามชุดแบรนด์ทางการของ Raiku: Paper, Ink และ Geist",
+          footerLeft:"แดชบอร์ดชุมชนอิสระ ไม่ได้มีส่วนเกี่ยวข้องกับ Raiku",
+          chartAria:"แผนภูมิเส้นแสดงมูลค่ารวมที่ล็อกของ rkuSOL ในสกุลเงินดอลลาร์สหรัฐ"
+        },
+        vi: {
+          snapBadge:"Ảnh chụp · 25 thg 11, 2026", footerSnap:"ẢNH CHỤP · 25 THG 11, 2026 · 23:36 WIB (UTC+7)",
+          wordmarkSub:"RKUSOL · SỔ STAKING", langLabel:"Ngôn ngữ",
+          kicker:"Raiku · Staking thanh khoản trên Solana",
+          heroTitle:"Mọi SOL được stake với Raiku, công khai minh bạch.",
+          heroSub:"rkuSOL là token staking thanh khoản của Raiku. Trang công khai này theo dõi có bao nhiêu SOL được stake đằng sau nó, pool trị giá bao nhiêu, bao nhiêu ví đang nắm giữ, và tổng số đã thay đổi thế nào kể từ khi ra mắt — tất cả từ các nguồn công khai, có thể kiểm chứng.",
+          statStaked:"Tổng SOL đã stake",
+          heroFigSub:"Được stake qua pool validator của Raiku và đại diện bởi rkuSOL — một token vẫn sinh lời trong khi giữ tính thanh khoản khắp DeFi Solana.",
+          statTvl:"Tổng giá trị bị khóa (TVL)", statTvlSub:"Giá trị pool staking theo đô la Mỹ (DefiLlama).",
+          statHolders:"Tổng số holder", statHoldersSub:"Số ví đang nắm giữ rkuSOL (Phantom).",
+          statSupply:"Nguồn cung rkuSOL", statSupplySub:"Token đang lưu hành (Phantom).",
+          statApy:"APY staking", statApySub:"Lợi suất thực tế trong 10 epoch gần nhất (Sanctum).",
+          statRate:"Tỷ giá", statRateSub:"SOL trên 1 rkuSOL, suy ra từ stake ÷ nguồn cung.",
+          statPrice:"Giá rkuSOL", statPriceSub:"Suy ra từ TVL ÷ nguồn cung (DefiLlama, Phantom).",
+          chartTitle:"Tiến trình staking", chartTag:"TVL · USD · Hàng ngày",
+          chartIntro:"Tổng giá trị bị khóa của pool, theo từng ngày, kể từ khi DefiLlama bắt đầu theo dõi Raiku Staked SOL vào 19 tháng 9 năm 2026.",
+          range30:"30 ngày gần nhất", rangeAll:"Toàn bộ thời gian", chg30Label:"Thay đổi 30 ngày", chg7Label:"Thay đổi 7 ngày",
+          athNow:"Hiện tại", athOf:"so với đỉnh mọi thời đại", athHigh:"Đỉnh mọi thời đại",
+          pointsTitle:"Điểm của holder", pointsTag:"Farming · Trạng thái",
+          pointsStatusTitle:"Chưa có chương trình điểm chính thức",
+          pointsStatusBody:"Tính đến ảnh chụp này, Raiku chưa chạy chương trình điểm công khai nào cho holder rkuSOL, và không có tổng điểm nào được công bố chính thức ở bất cứ đâu. Thứ holder kiếm được hôm nay là lợi suất: APY ở trên, được trả qua tỷ giá rkuSOL tăng dần. Nếu Raiku công bố chương trình điểm, thông tin sẽ xuất hiện đầu tiên trên các kênh chính thức của Raiku — hãy cảnh giác với mọi tuyên bố điểm không chính thức.",
+          trackerTitle:"Nhật ký điểm của riêng bạn",
+          trackerNote:"Đang farm điểm trên các nền tảng thưởng cho hoạt động rkuSOL? Ghi lại tổng số của bạn tại đây. Các mục chỉ tồn tại khi trang này đang mở — không có gì được lưu hay gửi đi đâu cả.",
+          platformLabel:"Nền tảng", pointsLabel:"Điểm", noteLabel:"Ghi chú (tùy chọn)", addBtn:"Thêm mục",
+          optOther:"Khác", emptyLog:"Chưa có mục nào.", totalPoints:"Tổng điểm đã ghi", deleteLabel:"Xóa",
+          aboutTitle:"Lợi suất đến từ đâu", aboutTag:"rkuSOL · Thu nhập",
+          aboutIntro:"Một token staking thanh khoản thông thường kiếm từ phần thưởng lạm phát và, tối đa, MEV. rkuSOL xếp thêm nguồn thứ ba lên trên: doanh thu từ các phiên đấu giá điều phối blockspace của Raiku.",
+          earn1T:"Phần thưởng staking",
+          earn1B:"SOL stake với validator của Raiku kiếm phần thưởng lạm phát của mạng Solana. Validator thu 0% hoa hồng và 0% hoa hồng MEV, nên phần thưởng đến tay người stake trọn vẹn.",
+          earn2T:"MEV",
+          earn2B:"Giá trị trích xuất tối đa (MEV) mà validator thu được khi tạo block được chia sẻ với pool, nâng tỷ giá rkuSOL theo thời gian.",
+          earn3T:"Doanh thu đấu giá",
+          earn3B:"Raiku bán blockspace được đảm bảo qua đấu giá Ahead-of-Time (AOT) và Just-in-Time (JIT) cho các công ty giao dịch cần được đưa vào block một cách chắc chắn. Doanh thu điều phối đó chảy ngược về holder rkuSOL — lần đầu tiên đối với một LST trên Solana.",
+          howTitle:"Stake trong ba bước", howTag:"stake.raiku.com",
+          step1:"Mở stake.raiku.com và kết nối ví Solana như Phantom hoặc Solflare.",
+          step2:"Nhập số SOL muốn stake và xác nhận. Bạn nhận lại rkuSOL theo tỷ giá của ngày hôm đó.",
+          step3:"Nắm giữ rkuSOL để kiếm lợi suất, dùng khắp DeFi Solana, hoặc unstake về SOL bất cứ lúc nào ngay trên cùng trang.",
+          stakeBtn:"Stake tại stake.raiku.com", sourcesTitle:"Nguồn",
+          srcLlama:"TVL hôm nay và toàn bộ lịch sử TVL hàng ngày, bao gồm đỉnh mọi thời đại.",
+          srcPhantom:"Số holder và nguồn cung lưu hành của mint rkuSOL.",
+          srcSanctum:"APY thực tế của rkuSOL trong 10 epoch gần nhất.",
+          srcRaiku:"Trang staking chính thức của Raiku — tổng SOL đã stake và tỷ giá trực tiếp.",
+          srcCompass:"Hồ sơ validator: hoa hồng, thời gian hoạt động và hiệu suất.",
+          srcBrandName:"Thương hiệu",
+          srcBrand:"Màu sắc và kiểu chữ của trang này tuân theo bộ nhận diện thương hiệu chính thức của Raiku: Paper, Ink và Geist.",
+          footerLeft:"Một bảng điều khiển cộng đồng độc lập. Không liên kết với Raiku.",
+          chartAria:"Biểu đồ đường tổng giá trị bị khóa của rkuSOL theo đô la Mỹ"
+        },
+        ru: {
+          snapBadge:"Снимок · 25 ноя 2026", footerSnap:"СНИМОК · 25 НОЯ 2026 · 23:36 WIB (UTC+7)",
+          wordmarkSub:"RKUSOL · ЖУРНАЛ СТЕЙКИНГА", langLabel:"Язык",
+          kicker:"Raiku · Ликвидный стейкинг на Solana",
+          heroTitle:"Каждый SOL, застейканный в Raiku, — на виду.",
+          heroSub:"rkuSOL — токен ликвидного стейкинга Raiku. Эта публичная страница показывает, сколько SOL застейкано за ним, сколько стоит пул, сколько кошельков его держат и как итог менялся с запуска — всё из публичных, проверяемых источников.",
+          statStaked:"Всего застейкано SOL",
+          heroFigSub:"Застейкано через пул валидатора Raiku и представлено токеном rkuSOL — токеном, который продолжает приносить доход, оставаясь ликвидным во всём DeFi Solana.",
+          statTvl:"Общая заблокированная стоимость (TVL)", statTvlSub:"Стоимость пула стейкинга в долларах США (DefiLlama).",
+          statHolders:"Всего держателей", statHoldersSub:"Кошельки, держащие rkuSOL (Phantom).",
+          statSupply:"Предложение rkuSOL", statSupplySub:"Токены в обращении (Phantom).",
+          statApy:"APY стейкинга", statApySub:"Реализованная доходность за последние 10 эпох (Sanctum).",
+          statRate:"Обменный курс", statRateSub:"SOL за 1 rkuSOL, выведено из стейк ÷ предложение.",
+          statPrice:"Цена rkuSOL", statPriceSub:"Выведено из TVL ÷ предложение (DefiLlama, Phantom).",
+          chartTitle:"Прогресс стейкинга", chartTag:"TVL · USD · Ежедневно",
+          chartIntro:"Общая заблокированная стоимость пула по дням — с 19 сентября 2026 года, когда DefiLlama начал отслеживать Raiku Staked SOL.",
+          range30:"Последние 30 дней", rangeAll:"За всё время", chg30Label:"Изменение за 30 дней", chg7Label:"Изменение за 7 дней",
+          athNow:"Сейчас", athOf:"от исторического максимума", athHigh:"Исторический максимум",
+          pointsTitle:"Баллы держателей", pointsTag:"Фарминг · Статус",
+          pointsStatusTitle:"Официальной программы баллов пока нет",
+          pointsStatusBody:"На момент этого снимка Raiku не ведёт публичной программы баллов для держателей rkuSOL, и нигде официально не опубликовано итоговое число баллов. Сегодня держатели зарабатывают доходность: APY выше, выплачиваемый через растущий обменный курс rkuSOL. Если Raiku объявит программу баллов, она сначала появится на официальных каналах Raiku — относитесь к любым неофициальным заявлениям о баллах с осторожностью.",
+          trackerTitle:"Ваш собственный журнал баллов",
+          trackerNote:"Фармите баллы на платформах, которые вознаграждают активность с rkuSOL? Ведите подсчёт здесь. Записи живут только пока открыта эта страница — ничего не сохраняется и никуда не отправляется.",
+          platformLabel:"Платформа", pointsLabel:"Баллы", noteLabel:"Заметка (необязательно)", addBtn:"Добавить запись",
+          optOther:"Другое", emptyLog:"Записей пока нет.", totalPoints:"Всего записано баллов", deleteLabel:"Удалить",
+          aboutTitle:"Откуда берётся доходность", aboutTag:"rkuSOL · Доход",
+          aboutIntro:"Обычный токен ликвидного стейкинга зарабатывает на инфляционных наградах и, в лучшем случае, на MEV. rkuSOL добавляет сверху третий источник: выручку аукционов координации блочного пространства Raiku.",
+          earn1T:"Награды за стейкинг",
+          earn1B:"SOL, застейканный у валидатора Raiku, зарабатывает инфляционные награды сети Solana. Валидатор берёт 0% комиссии и 0% комиссии MEV, поэтому награды полностью достаются стейкерам.",
+          earn2T:"MEV",
+          earn2B:"Максимальная извлекаемая стоимость (MEV), которую валидатор получает при создании блоков, делится с пулом, со временем повышая обменный курс rkuSOL.",
+          earn3T:"Выручка аукционов",
+          earn3B:"Raiku продаёт гарантированное блочное пространство через аукционы Ahead-of-Time (AOT) и Just-in-Time (JIT) торговым фирмам, которым нужно гарантированное включение в блок. Эта координационная выручка возвращается держателям rkuSOL — впервые для LST на Solana.",
+          howTitle:"Стейкинг в три шага", howTag:"stake.raiku.com",
+          step1:"Откройте stake.raiku.com и подключите кошелёк Solana, например Phantom или Solflare.",
+          step2:"Введите сумму SOL для стейкинга и подтвердите. Взамен вы получите rkuSOL по курсу дня.",
+          step3:"Держите rkuSOL и зарабатывайте, используйте его в DeFi Solana или в любой момент выведите обратно в SOL на той же странице.",
+          stakeBtn:"Стейкать на stake.raiku.com", sourcesTitle:"Источники",
+          srcLlama:"TVL на сегодня и полная ежедневная история TVL, включая исторический максимум.",
+          srcPhantom:"Число держателей и оборотное предложение минта rkuSOL.",
+          srcSanctum:"Реализованный APY rkuSOL за последние 10 эпох.",
+          srcRaiku:"Официальная страница стейкинга Raiku — всего застейкано SOL и живой обменный курс.",
+          srcCompass:"Профиль валидатора: комиссия, аптайм и производительность.",
+          srcBrandName:"Бренд",
+          srcBrand:"Цвета и типографика этой страницы следуют официальному бренд-киту Raiku: Paper, Ink и Geist.",
+          footerLeft:"Независимая панель сообщества. Не аффилирована с Raiku.",
+          chartAria:"Линейный график общей заблокированной стоимости rkuSOL в долларах США"
+        },
+        sw: {
+          snapBadge:"Picha ya data · 25 Nov 2026", footerSnap:"PICHA YA DATA · 25 NOV 2026 · 23:36 WIB (UTC+7)",
+          wordmarkSub:"RKUSOL · DAFTARI LA STAKING", langLabel:"Lugha",
+          kicker:"Raiku · Staking ya ukwasi kwenye Solana",
+          heroTitle:"Kila SOL iliyowekwa staking Raiku, iko wazi kwa wote.",
+          heroSub:"rkuSOL ni tokeni ya staking ya ukwasi ya Raiku. Ukurasa huu wa umma unafuatilia SOL ngapi ziko staking nyuma yake, thamani ya pool, pochi ngapi zinaiholdi, na jumla imebadilikaje tangu kuzinduliwa — yote kutoka vyanzo vya umma vinavyoweza kuthibitishwa.",
+          statStaked:"Jumla ya SOL zilizowekwa staking",
+          heroFigSub:"Zimewekwa staking kupitia pool ya validator ya Raiku na kuwakilishwa na rkuSOL — tokeni inayoendelea kupata mapato huku ikibaki na ukwasi katika DeFi yote ya Solana.",
+          statTvl:"Thamani yote iliyofungwa (TVL)", statTvlSub:"Thamani ya pool ya staking kwa dola za Marekani (DefiLlama).",
+          statHolders:"Jumla ya waholdi", statHoldersSub:"Pochi zinazoholdi rkuSOL (Phantom).",
+          statSupply:"Ugavi wa rkuSOL", statSupplySub:"Tokeni zilizoko kwenye mzunguko (Phantom).",
+          statApy:"APY ya staking", statApySub:"Mapato halisi ya epoch 10 zilizopita (Sanctum).",
+          statRate:"Kiwango cha kubadilisha", statRateSub:"SOL kwa rkuSOL 1, kinachotokana na staking ÷ ugavi.",
+          statPrice:"Bei ya rkuSOL", statPriceSub:"Inayotokana na TVL ÷ ugavi (DefiLlama, Phantom).",
+          chartTitle:"Maendeleo ya staking", chartTag:"TVL · USD · Kila siku",
+          chartIntro:"Thamani yote iliyofungwa ya pool, siku baada ya siku, tangu DefiLlama ilipoanza kufuatilia Raiku Staked SOL tarehe 19 Septemba 2026.",
+          range30:"Siku 30 zilizopita", rangeAll:"Wakati wote", chg30Label:"Mabadiliko ya siku 30", chg7Label:"Mabadiliko ya siku 7",
+          athNow:"Sasa", athOf:"ya kiwango cha juu zaidi cha wakati wote", athHigh:"Kiwango cha juu zaidi cha wakati wote",
+          pointsTitle:"Pointi za waholdi", pointsTag:"Farming · Hali",
+          pointsStatusTitle:"Hakuna programu rasmi ya pointi — bado",
+          pointsStatusBody:"Kufikia picha hii ya data, Raiku haina programu ya pointi ya umma kwa waholdi wa rkuSOL, na hakuna jumla ya pointi iliyochapishwa rasmi popote. Waholdi wanachopata leo ni mapato: APY iliyo juu, inayolipwa kupitia kiwango cha kubadilisha cha rkuSOL kinachopanda. Raiku ikitangaza programu ya pointi, itaonekana kwanza kwenye chaneli rasmi za Raiku — kuwa mwangalifu na madai yoyote ya pointi yasiyo rasmi.",
+          trackerTitle:"Kumbukumbu yako ya pointi",
+          trackerNote:"Unafarm pointi kwenye mifumo inayozawadia shughuli za rkuSOL? Weka jumla yako hapa. Maingizo yanabaki tu ukurasa huu ukiwa wazi — hakuna kinachohifadhiwa au kutumwa popote.",
+          platformLabel:"Jukwaa", pointsLabel:"Pointi", noteLabel:"Maelezo (si lazima)", addBtn:"Ongeza ingizo",
+          optOther:"Nyingine", emptyLog:"Hakuna maingizo bado.", totalPoints:"Jumla ya pointi zilizorekodiwa", deleteLabel:"Futa",
+          aboutTitle:"Mapato yanatoka wapi", aboutTag:"rkuSOL · Mapato",
+          aboutIntro:"Tokeni ya kawaida ya staking ya ukwasi hupata mapato kutoka zawadi za mfumuko wa bei na, kwa upeo, MEV. rkuSOL huongeza chanzo cha tatu juu yake: mapato ya minada ya uratibu wa nafasi ya block ya Raiku.",
+          earn1T:"Zawadi za staking",
+          earn1B:"SOL zilizowekwa staking kwa validator ya Raiku hupata zawadi za mfumuko wa bei za mtandao wa Solana. Validator hutoza kamisheni 0% na kamisheni ya MEV 0%, hivyo zawadi huwafikia wastaker kikamilifu.",
+          earn2T:"MEV",
+          earn2B:"Thamani ya juu zaidi inayoweza kutolewa (MEV) inayokamatwa na validator wakati wa kutengeneza block hugawanywa na pool, ikipandisha kiwango cha kubadilisha cha rkuSOL kadri muda unavyokwenda.",
+          earn3T:"Mapato ya mnada",
+          earn3B:"Raiku huuza nafasi ya block yenye uhakika kupitia minada ya Ahead-of-Time (AOT) na Just-in-Time (JIT) kwa makampuni ya biashara yanayohitaji uhakika wa kuingizwa kwenye block. Mapato hayo ya uratibu hurudi kwa waholdi wa rkuSOL — mara ya kwanza kwa LST ya Solana.",
+          howTitle:"Weka staking kwa hatua tatu", howTag:"stake.raiku.com",
+          step1:"Fungua stake.raiku.com na uunganishe pochi ya Solana kama Phantom au Solflare.",
+          step2:"Weka kiasi cha SOL cha kuweka staking na uthibitishe. Utapokea rkuSOL badala yake, kwa kiwango cha kubadilisha cha siku hiyo.",
+          step3:"Shika rkuSOL ili kupata mapato, itumie katika DeFi yote ya Solana, au iondoe staking kurudi SOL wakati wowote kutoka ukurasa huo huo.",
+          stakeBtn:"Weka staking kwenye stake.raiku.com", sourcesTitle:"Vyanzo",
+          srcLlama:"TVL ya leo na historia kamili ya TVL ya kila siku, ikijumuisha kiwango cha juu zaidi cha wakati wote.",
+          srcPhantom:"Idadi ya waholdi na ugavi unaozunguka wa mint ya rkuSOL.",
+          srcSanctum:"APY halisi ya rkuSOL kwa epoch 10 zilizopita.",
+          srcRaiku:"Ukurasa rasmi wa staking wa Raiku — jumla ya SOL zilizowekwa staking na kiwango cha kubadilisha cha moja kwa moja.",
+          srcCompass:"Wasifu wa validator: kamisheni, muda wa kuwaka na utendaji.",
+          srcBrandName:"Chapa",
+          srcBrand:"Rangi na herufi za ukurasa huu hufuata kit rasmi cha chapa cha Raiku: Paper, Ink na Geist.",
+          footerLeft:"Dashibodi huru ya jamii. Haihusiani na Raiku.",
+          chartAria:"Chati ya mstari ya thamani yote iliyofungwa ya rkuSOL kwa dola za Marekani"
+        },
+        ha: {
+          snapBadge:"Hoton bayanai · 25 Nuwamba 2026", footerSnap:"HOTON BAYANAI · 25 NUWAMBA 2026 · 23:36 WIB (UTC+7)",
+          wordmarkSub:"RKUSOL · LITTAFIN STAKING", langLabel:"Harshe",
+          kicker:"Raiku · Liquid staking a Solana",
+          heroTitle:"Kowane SOL da aka yi staking a Raiku, a bayyane yake ga kowa.",
+          heroSub:"rkuSOL shi ne token na liquid staking na Raiku. Wannan shafi na jama'a yana bin diddigin SOL nawa aka yi staking a bayansa, darajar pool, wallet nawa ke riƙe da shi, da yadda jimillar ta canza tun ƙaddamarwa — duka daga tushen bayanai na jama'a da za a iya tabbatarwa.",
+          statStaked:"Jimillar SOL da aka yi staking",
+          heroFigSub:"An yi staking ta cikin pool na validator na Raiku, rkuSOL ke wakiltarsa — token da ke ci gaba da samun kuɗi yayin da yake da ruwa a duk DeFi na Solana.",
+          statTvl:"Jimillar darajar da aka kulle (TVL)", statTvlSub:"Darajar pool na staking a dalar Amurka (DefiLlama).",
+          statHolders:"Jimillar masu riƙewa", statHoldersSub:"Wallet da ke riƙe da rkuSOL (Phantom).",
+          statSupply:"Wadatar rkuSOL", statSupplySub:"Token da ke yawo (Phantom).",
+          statApy:"APY na staking", statApySub:"Ribar da aka samu a epoch 10 da suka gabata (Sanctum).",
+          statRate:"Farashin musaya", statRateSub:"SOL ga kowane rkuSOL 1, daga staking ÷ wadata.",
+          statPrice:"Farashin rkuSOL", statPriceSub:"Daga TVL ÷ wadata (DefiLlama, Phantom).",
+          chartTitle:"Ci gaban staking", chartTag:"TVL · USD · Kullum",
+          chartIntro:"Jimillar darajar da aka kulle ta pool, rana bayan rana, tun lokacin da DefiLlama ya fara bin Raiku Staked SOL a ranar 19 ga Satumba 2026.",
+          range30:"Kwanaki 30 da suka gabata", rangeAll:"Duk lokaci", chg30Label:"Canjin kwanaki 30", chg7Label:"Canjin kwanaki 7",
+          athNow:"Yanzu", athOf:"na mafi girma a kowane lokaci", athHigh:"Mafi girma a kowane lokaci",
+          pointsTitle:"Maki na masu riƙewa", pointsTag:"Farming · Matsayi",
+          pointsStatusTitle:"Babu shirin maki na hukuma — tukuna",
+          pointsStatusBody:"Ya zuwa wannan hoton bayanai, Raiku ba ta da shirin maki na jama'a ga masu riƙe rkuSOL, kuma babu jimillar maki da aka wallafa a hukuma a ko'ina. Abin da masu riƙewa ke samu yau shi ne riba: APY da ke sama, ana biya ta farashin musaya na rkuSOL da ke tashi. Idan Raiku ta sanar da shirin maki, zai fara bayyana a tashoshin hukuma na Raiku — ku yi hattara da kowane iƙirarin maki da ba na hukuma ba.",
+          trackerTitle:"Littafin makinka na kanka",
+          trackerNote:"Kana farming maki a dandamali da ke ba da lada ga ayyukan rkuSOL? Ka rubuta jimillarka a nan. Shigarwa na nan ne kawai yayin da wannan shafi yake a buɗe — ba a adana komai kuma ba a aika komai ko'ina.",
+          platformLabel:"Dandamali", pointsLabel:"Maki", noteLabel:"Bayani (na zaɓi)", addBtn:"Ƙara shigarwa",
+          optOther:"Sauran", emptyLog:"Babu shigarwa tukuna.", totalPoints:"Jimillar maki da aka rubuta", deleteLabel:"Goge",
+          aboutTitle:"Daga ina riba ke fitowa", aboutTag:"rkuSOL · Kuɗin shiga",
+          aboutIntro:"Token na liquid staking na yau da kullun yana samun kuɗi daga ladan hauhawar farashi da, a mafi girma, MEV. rkuSOL ya tara tushe na uku a kai: kuɗin shiga na gwanjan daidaita blockspace na Raiku.",
+          earn1T:"Ladan staking",
+          earn1B:"SOL da aka yi staking da validator na Raiku yana samun ladan hauhawar farashi na hanyar sadarwa ta Solana. Validator yana cajin kamishan 0% da kamishan MEV 0%, don haka lada na isa ga masu staking gaba ɗaya.",
+          earn2T:"MEV",
+          earn2B:"Mafi girman darajar da za a iya fitarwa (MEV) da validator ke kamawa yayin da yake samar da block ana raba ta da pool, yana ɗaga farashin musaya na rkuSOL a kan lokaci.",
+          earn3T:"Kuɗin shiga na gwanjo",
+          earn3B:"Raiku yana sayar da blockspace mai garantin ta gwanjan Ahead-of-Time (AOT) da Just-in-Time (JIT) ga kamfanonin ciniki da ke buƙatar tabbacin shiga block. Wannan kuɗin shiga na daidaitawa yana komawa ga masu riƙe rkuSOL — na farko ga LST na Solana.",
+          howTitle:"Yi staking a matakai uku", howTag:"stake.raiku.com",
+          step1:"Buɗe stake.raiku.com ka haɗa wallet na Solana kamar Phantom ko Solflare.",
+          step2:"Shigar da adadin SOL da za ka yi staking ka tabbatar. Za ka karɓi rkuSOL a madadinsa, a farashin musaya na ranar.",
+          step3:"Riƙe rkuSOL don samun riba, yi amfani da shi a duk DeFi na Solana, ko ka cire staking ka koma SOL a kowane lokaci daga shafi guda.",
+          stakeBtn:"Yi staking a stake.raiku.com", sourcesTitle:"Tushen bayanai",
+          srcLlama:"TVL na yau da cikakken tarihin TVL na kullum, ciki har da mafi girma a kowane lokaci.",
+          srcPhantom:"Adadin masu riƙewa da wadata mai yawo na mint na rkuSOL.",
+          srcSanctum:"APY da aka samu na rkuSOL a epoch 10 da suka gabata.",
+          srcRaiku:"Shafin staking na hukuma na Raiku — jimillar SOL da aka yi staking da farashin musaya na kai tsaye.",
+          srcCompass:"Bayanin validator: kamishan, lokacin aiki da aiki.",
+          srcBrandName:"Alama",
+          srcBrand:"Lauyoyin wannan shafi da haruffansa suna bin kit na alama na hukuma na Raiku: Paper, Ink da Geist.",
+          footerLeft:"Dashbod na al'umma mai zaman kansa. Ba ya da alaƙa da Raiku.",
+          chartAria:"Jadawalin layi na jimillar darajar da aka kulle ta rkuSOL a dalar Amurka"
+        },
+        yo: {
+          snapBadge:"Àwòrán dátà · 25 Nov 2026", footerSnap:"ÀWÒRÁN DÁTÀ · 25 NOV 2026 · 23:36 WIB (UTC+7)",
+          wordmarkSub:"RKUSOL · ÌWÉ STAKING", langLabel:"Èdè",
+          kicker:"Raiku · Liquid staking lórí Solana",
+          heroTitle:"Gbogbo SOL tí a stake pẹ̀lú Raiku, ní gbangba fún gbogbo ènìyàn.",
+          heroSub:"rkuSOL ni token liquid staking ti Raiku. Ojúewé gbogbo ènìyàn yìí ń tọpinpin iye SOL tí a stake lẹ́yìn rẹ̀, iye tí pool náà ní, wallet mélòó ló dì í mú, àti bí àpapọ̀ náà ṣe yípadà láti ìgbà ìfilọ́lẹ̀ — gbogbo rẹ̀ láti orísun gbogbo ènìyàn tí a lè fìdí múlẹ̀.",
+          statStaked:"Àpapọ̀ SOL tí a stake",
+          heroFigSub:"A stake nípasẹ̀ pool validator ti Raiku, rkuSOL sì dúró fún un — token tí ó ń bá a lọ ní rírí owó nígbà tí ó ṣì ní omi ní gbogbo DeFi Solana.",
+          statTvl:"Àpapọ̀ iye tí a ti pa (TVL)", statTvlSub:"Iye pool staking ní dọ́là Amẹ́ríkà (DefiLlama).",
+          statHolders:"Àpapọ̀ àwọn olùní", statHoldersSub:"Wallet tí ó dì rkuSOL mú (Phantom).",
+          statSupply:"Ìpèsè rkuSOL", statSupplySub:"Token tí ó wà ní ìsànkálẹ̀ (Phantom).",
+          statApy:"APY staking", statApySub:"Èrè gidi tí a rí ní epoch mẹ́wàá tí ó kọjá (Sanctum).",
+          statRate:"Ìwọ̀n pàṣípààrọ̀", statRateSub:"SOL fún rkuSOL 1, tí a mú jáde láti staking ÷ ìpèsè.",
+          statPrice:"Iye rkuSOL", statPriceSub:"Tí a mú jáde láti TVL ÷ ìpèsè (DefiLlama, Phantom).",
+          chartTitle:"Ìlọsíwájú staking", chartTag:"TVL · USD · Ojoojúmọ́",
+          chartIntro:"Àpapọ̀ iye tí a ti pa ti pool náà, ọjọ́ dé ọjọ́, láti ìgbà tí DefiLlama ti bẹ̀rẹ̀ sí í tọpinpin Raiku Staked SOL ní 19 Oṣù Kẹ̀sán 2026.",
+          range30:"Ọjọ́ 30 tí ó kọjá", rangeAll:"Gbogbo àkókò", chg30Label:"Ìyípadà ọjọ́ 30", chg7Label:"Ìyípadà ọjọ́ 7",
+          athNow:"Nísinsin", athOf:"nínú òkè jùlọ ti gbogbo àkókò", athHigh:"Òkè jùlọ ti gbogbo àkókò",
+          pointsTitle:"Àwọn àmì àwọn olùní", pointsTag:"Farming · Ipò",
+          pointsStatusTitle:"Kò sí ètò àmì tí ó jẹ́ tìjọba — síbẹ̀",
+          pointsStatusBody:"Ní àwòrán dátà yìí, Raiku kò ní ètò àmì gbogbo ènìyàn fún àwọn olùní rkuSOL, bẹ́ẹ̀ ni kò sí àpapọ̀ àmì tí a tẹ̀ jáde ní tìjọba níbikíbi. Ohun tí àwọn olùní ń rí gbà lónìí ni èrè: APY tí ó wà lókè, tí a ń san nípasẹ̀ ìwọ̀n pàṣípààrọ̀ rkuSOL tí ó ń dìde. Bí Raiku bá kéde ètò àmì, yóò kọ́kọ́ hàn ní àwọn ikanni tìjọba ti Raiku — ṣọ́ra fún ẹ̀sùn àmì èyíkéyìí tí kò jẹ́ tìjọba.",
+          trackerTitle:"Àkọsílẹ̀ àmì tìrẹ",
+          trackerNote:"Ṣé o ń farm àmì ní àwọn pẹpẹ tí ó ń san án fún ìgbésẹ̀ rkuSOL? Kọ àpapọ̀ rẹ síbí. Àwọn àkọsílẹ̀ wà níbẹ̀ nígbà tí ojúewé yìí bá ṣí nìkan — a kò fi nǹkan pamọ́, a kò sì rán nǹkan lọ síbikíbi.",
+          platformLabel:"Pẹpẹ", pointsLabel:"Àwọn àmì", noteLabel:"Àkíyèsí (àṣàyàn)", addBtn:"Fi àkọsílẹ̀ kún",
+          optOther:"Òmíràn", emptyLog:"Kò sí àkọsílẹ̀ síbẹ̀.", totalPoints:"Àpapọ̀ àmì tí a kọ sílẹ̀", deleteLabel:"Pa á rẹ́",
+          aboutTitle:"Níbo ni èrè ti ń wá", aboutTag:"rkuSOL · Owó wíwọlé",
+          aboutIntro:"Token liquid staking lásán ń rí owó gbà láti èrè ìfihàn owó àti, ní òkè jùlọ, MEV. rkuSOL fi orísun kẹta kún un lókè: owó wíwọlé láti ìfihàn ìṣọ̀kan blockspace ti Raiku.",
+          earn1T:"Èrè staking",
+          earn1B:"SOL tí a stake pẹ̀lú validator ti Raiku ń rí èrè ìfihàn owó ti nẹ́tíwọ́ọ̀kì Solana. Validator náà ń gba kamísọ́n 0% àti kamísọ́n MEV 0%, nítorí náà èrè ń dé ọ̀dọ̀ àwọn olùstake ní kíkún.",
+          earn2T:"MEV",
+          earn2B:"Iye tí ó pọ̀ jùlọ tí a lè yọ jáde (MEV) tí validator bá mú nígbà tí ó ń ṣe block ni a ń pín pẹ̀lú pool náà, tí ó ń gbé ìwọ̀n pàṣípààrọ̀ rkuSOL sókè bí àkókò ṣe ń lọ.",
+          earn3T:"Owó wíwọlé ìfihàn",
+          earn3B:"Raiku ń ta blockspace tí a dájú nípasẹ̀ ìfihàn Ahead-of-Time (AOT) àti Just-in-Time (JIT) fún àwọn ilé-iṣẹ́ ìṣòwò tí ó nílò ìdánilójú wíwọlé sí block. Owó wíwọlé ìṣọ̀kan náà ń sàn padà sí àwọn olùní rkuSOL — èyí ni àkọ́kọ́ fún LST Solana.",
+          howTitle:"Stake ní ìgbésẹ̀ mẹ́ta", howTag:"stake.raiku.com",
+          step1:"Ṣí stake.raiku.com kí o sì so wallet Solana bíi Phantom tàbí Solflare pọ̀.",
+          step2:"Tẹ iye SOL tí o fẹ́ stake kí o sì fìdí rẹ̀ múlẹ̀. Ìwọ yóò gba rkuSOL ní pàṣípààrọ̀, ní ìwọ̀n pàṣípààrọ̀ ọjọ́ náà.",
+          step3:"Dì rkuSOL mú láti rí èrè gbà, lò ó ní gbogbo DeFi Solana, tàbí yọ ó padà sí SOL nígbàkígbà láti ojúewé kan náà.",
+          stakeBtn:"Stake ní stake.raiku.com", sourcesTitle:"Àwọn orísun",
+          srcLlama:"TVL òní àti gbogbo ìtàn TVL ojoojúmọ́, pẹ̀lú òkè jùlọ ti gbogbo àkókò.",
+          srcPhantom:"Iye àwọn olùní àti ìpèsè ìsànkálẹ̀ ti mint rkuSOL.",
+          srcSanctum:"APY gidi ti rkuSOL ní epoch mẹ́wàá tí ó kọjá.",
+          srcRaiku:"Ojúewé staking tìjọba ti Raiku — àpapọ̀ SOL tí a stake àti ìwọ̀n pàṣípààrọ̀ láàyè.",
+          srcCompass:"Àkọsílẹ̀ validator: kamísọ́n, àkókò ìṣiṣẹ́ àti iṣẹ́.",
+          srcBrandName:"Àmì ìdánimọ̀",
+          srcBrand:"Àwọn àwọ̀ àti ìrísí lẹ́tà ojúewé yìí tẹ̀lé kit àmì ìdánimọ̀ tìjọba ti Raiku: Paper, Ink àti Geist.",
+          footerLeft:"Dashboard àwùjọ òmìnira. Kò ní ìbátan pẹ̀lú Raiku.",
+          chartAria:"Àwòrán ìlà ti àpapọ̀ iye tí a ti pa ti rkuSOL ní dọ́là Amẹ́ríkà"
+        },
+        am: {
+          snapBadge:"ቅጽበታዊ መረጃ · 25 ኖቬምበር 2026", footerSnap:"ቅጽበታዊ መረጃ · 25 ኖቬምበር 2026 · 23:36 WIB (UTC+7)",
+          wordmarkSub:"RKUSOL · የስቴኪንግ መዝገብ", langLabel:"ቋንቋ",
+          kicker:"Raiku · በSolana ላይ liquid staking",
+          heroTitle:"በRaiku የተስቴክ የተደረገ እያንዳንዱ SOL፣ በግልጽ ለሁሉም።",
+          heroSub:"rkuSOL የRaiku liquid staking ቶከን ነው። ይህ የሕዝብ ገጽ ከኋላው ስንት SOL እንደተስቴክ፣ ፑሉ ምን ያህል እንደሚያወጣ፣ ስንት ዋሌቶች እንደያዙት እና ጠቅላላው ከተጀመረ ጀምሮ እንዴት እንደተቀየረ ይከታተላል — ሁሉም ከሕዝብ፣ ሊረጋገጡ ከሚችሉ ምንጮች።",
+          statStaked:"ጠቅላላ የተስቴክ SOL",
+          heroFigSub:"በRaiku validator ፑል በኩል ተስቴክ ተደርጎ በrkuSOL የሚወከል — በSolana DeFi ሁሉ ፈሳሽ ሆኖ እያለ ገቢ ማግኘቱን የሚቀጥል ቶከን።",
+          statTvl:"ጠቅላላ የተቆለፈ እሴት (TVL)", statTvlSub:"የስቴኪንግ ፑሉ የአሜሪካ ዶላር እሴት (DefiLlama)።",
+          statHolders:"ጠቅላላ ያዢዎች", statHoldersSub:"rkuSOL የያዙ ዋሌቶች (Phantom)።",
+          statSupply:"የrkuSOL አቅርቦት", statSupplySub:"በስርጭት ላይ ያሉ ቶከኖች (Phantom)።",
+          statApy:"የStaking APY", statApySub:"ባለፉት 10 ኤፖኮች የተገኘ ትርፍ (Sanctum)።",
+          statRate:"የምንዛሪ ተመን", statRateSub:"SOL ለ1 rkuSOL፣ ከስቴክ ÷ አቅርቦት የተገኘ።",
+          statPrice:"የrkuSOL ዋጋ", statPriceSub:"ከTVL ÷ አቅርቦት የተገኘ (DefiLlama, Phantom)።",
+          chartTitle:"የስቴኪንግ እድገት", chartTag:"TVL · USD · በየቀኑ",
+          chartIntro:"የፑሉ ጠቅላላ የተቆለፈ እሴት፣ ቀን በቀን፣ DefiLlama Raiku Staked SOLን መከታተል ከጀመረበት ከ19 ሴፕቴምበር 2026 ጀምሮ።",
+          range30:"ያለፉት 30 ቀናት", rangeAll:"ሁሉም ጊዜ", chg30Label:"የ30 ቀን ለውጥ", chg7Label:"የ7 ቀን ለውጥ",
+          athNow:"አሁን", athOf:"ከምን ጊዜም ከፍተኛው", athHigh:"የምን ጊዜም ከፍተኛ",
+          pointsTitle:"የያዢዎች ነጥቦች", pointsTag:"Farming · ሁኔታ",
+          pointsStatusTitle:"ኦፊሴላዊ የነጥብ ፕሮግራም የለም — ገና",
+          pointsStatusBody:"እስከዚህ ቅጽበታዊ መረጃ ድረስ፣ Raiku ለrkuSOL ያዢዎች ምንም የሕዝብ የነጥብ ፕሮግራም አያካሂድም፣ እና ምንም የነጥብ ጠቅላላ በይፋ የትም አልታተመም። ያዢዎች ዛሬ የሚያገኙት ትርፍ ነው፦ ከላይ ያለው APY፣ በሚጨምረው የrkuSOL ምንዛሪ ተመን በኩል የሚከፈል። Raiku የነጥብ ፕሮግራም ካወጀ፣ መጀመሪያ በኦፊሴላዊ ቻናሎቹ ላይ ይታያል — ማንኛውንም ኦፊሴላዊ ያልሆነ የነጥብ አባባል በጥንቃቄ ይመልከቱ።",
+          trackerTitle:"የራስዎ የነጥብ መዝገብ",
+          trackerNote:"ለrkuSOL እንቅስቃሴ ሽልማት በሚሰጡ መድረኮች ላይ ነጥብ እየሰበሰቡ ነው? ጠቅላላዎን እዚህ ይከታተሉ። ግቤቶች የሚኖሩት ይህ ገጽ ክፍት እስከሆነ ድረስ ብቻ ነው — ምንም አይቀመጥም ወይም የትም አይላክም።",
+          platformLabel:"መድረክ", pointsLabel:"ነጥቦች", noteLabel:"ማስታወሻ (አማራጭ)", addBtn:"ግቤት ጨምር",
+          optOther:"ሌላ", emptyLog:"ገና ምንም ግቤት የለም።", totalPoints:"ጠቅላላ የተመዘገቡ ነጥቦች", deleteLabel:"ሰርዝ",
+          aboutTitle:"ትርፉ ከየት ይመጣል", aboutTag:"rkuSOL · ገቢ",
+          aboutIntro:"መደበኛ liquid staking ቶከን ከዋጋ ግሽበት ሽልማቶች እና፣ ቢበዛ፣ ከMEV ያገኛል። rkuSOL ሦስተኛ ምንጭ ከላይ ይጨምራል፦ የRaiku የብሎክ ቦታ ማስተባበሪያ ጨረታዎች ገቢ።",
+          earn1T:"የStaking ሽልማቶች",
+          earn1B:"በRaiku validator የተስቴክ SOL የSolana ኔትወርክ የዋጋ ግሽበት ሽልማቶችን ያገኛል። Validatorው 0% ኮሚሽን እና 0% MEV ኮሚሽን ይከፍላል፣ ስለዚህ ሽልማቶች ሙሉ ለሙሉ ወደ ስቴከሮች ያልፋሉ።",
+          earn2T:"MEV",
+          earn2B:"Validatorው ብሎኮችን ሲያመርት የሚይዘው ከፍተኛ ሊወጣ የሚችል እሴት (MEV) ከፑሉ ጋር ይጋራል፣ የrkuSOL ምንዛሪ ተመንን በጊዜ ሂደት ያሳድጋል።",
+          earn3T:"የጨረታ ገቢ",
+          earn3B:"Raiku የተረጋገጠ የብሎክ ቦታን በAhead-of-Time (AOT) እና Just-in-Time (JIT) ጨረታዎች በኩል መካተት ለሚያስፈልጋቸው የንግድ ድርጅቶች ይሸጣል። ያ የማስተባበሪያ ገቢ ወደ rkuSOL ያዢዎች ይመለሳል — ለSolana LST የመጀመሪያው።",
+          howTitle:"በሦስት ደረጃዎች ስቴክ ያድርጉ", howTag:"stake.raiku.com",
+          step1:"stake.raiku.comን ይክፈቱ እና እንደ Phantom ወይም Solflare ያለ የSolana ዋሌት ያገናኙ።",
+          step2:"የሚስቴክ የሚያደርጉትን የSOL መጠን ያስገቡ እና ያረጋግጡ። በምላሹ፣ በዚያ ቀን ምንዛሪ ተመን rkuSOL ይቀበላሉ።",
+          step3:"ለመግኘት rkuSOLን ይያዙ፣ በSolana DeFi ሁሉ ይጠቀሙበት፣ ወይም በማንኛውም ጊዜ ከተመሳሳዩ ገጽ ወደ SOL ይመልሱ።",
+          stakeBtn:"በstake.raiku.com ስቴክ ያድርጉ", sourcesTitle:"ምንጮች",
+          srcLlama:"የዛሬው TVL እና ሙሉ የየቀኑ TVL ታሪክ፣ የምን ጊዜም ከፍተኛውን ጨምሮ።",
+          srcPhantom:"የrkuSOL ሚንት የያዢዎች ቁጥር እና የሚዘዋወር አቅርቦት።",
+          srcSanctum:"የrkuSOL ባለፉት 10 ኤፖኮች የተገኘ APY።",
+          srcRaiku:"የRaiku ኦፊሴላዊ የስቴኪንግ ገጽ — ጠቅላላ የተስቴክ SOL እና የቀጥታ ምንዛሪ ተመን።",
+          srcCompass:"የValidator መገለጫ፦ ኮሚሽን፣ የሚሰራበት ጊዜ እና አፈጻጸም።",
+          srcBrandName:"ብራንድ",
+          srcBrand:"የዚህ ገጽ ቀለሞች እና ፊደላት የRaikuን ኦፊሴላዊ የብራንድ ኪት ይከተላሉ፦ Paper፣ Ink እና Geist።",
+          footerLeft:"ገለልተኛ የማህበረሰብ ዳሽቦርድ። ከRaiku ጋር አልተያያዘም።",
+          chartAria:"የrkuSOL ጠቅላላ የተቆለፈ እሴት በአሜሪካ ዶላር የመስመር ቻርት"
+        },
+        zu: {
+          snapBadge:"Isithombe sedatha · 25 Nov 2026", footerSnap:"ISITHOMBE SEDATHA · 25 NOV 2026 · 23:36 WIB (UTC+7)",
+          wordmarkSub:"RKUSOL · INCWADI YE-STAKING", langLabel:"Ulimi",
+          kicker:"Raiku · I-liquid staking ku-Solana",
+          heroTitle:"Yonke i-SOL e-stake nge-Raiku, isobala kuwo wonke umuntu.",
+          heroSub:"I-rkuSOL iyithokheni ye-liquid staking ye-Raiku. Leli khasi lomphakathi lilandelela ukuthi ingakanani i-SOL e-stake ngemuva kwayo, ukuthi i-pool ibiza malini, mangaki ama-wallet ayiphethe, nokuthi isamba sishintshe kanjani kusukela kwethulwa — konke kuvela emithonjeni yomphakathi engaqinisekiswa.",
+          statStaked:"Isamba se-SOL e-stake",
+          heroFigSub:"I-stake nge-pool ye-validator ye-Raiku futhi imelwe yi-rkuSOL — ithokheni eqhubeka nokuthola imali ngenkathi ihlala i-liquid kuyo yonke i-DeFi ye-Solana.",
+          statTvl:"Isamba senani elikhiyiwe (TVL)", statTvlSub:"Inani le-pool ye-staking ngamadola ase-US (DefiLlama).",
+          statHolders:"Isamba sabanikazi", statHoldersSub:"Ama-wallet aphethe i-rkuSOL (Phantom).",
+          statSupply:"Ukunikezwa kwe-rkuSOL", statSupplySub:"Amathokheni asakazwayo (Phantom).",
+          statApy:"I-APY ye-staking", statApySub:"Inzuzo efinyelelwe kuma-epoch ayi-10 adlule (Sanctum).",
+          statRate:"Isilinganiso sokushintshana", statRateSub:"I-SOL nge-rkuSOL eyi-1, ethathwe ku-stake ÷ ukunikezwa.",
+          statPrice:"Intengo ye-rkuSOL", statPriceSub:"Ethathwe ku-TVL ÷ ukunikezwa (DefiLlama, Phantom).",
+          chartTitle:"Inqubekelaphambili ye-staking", chartTag:"TVL · USD · Nsuku zonke",
+          chartIntro:"Isamba senani elikhiyiwe le-pool, usuku nosuku, kusukela i-DefiLlama yaqala ukulandelela i-Raiku Staked SOL ngomhlaka-19 Septhemba 2026.",
+          range30:"Izinsuku eziyi-30 ezedlule", rangeAll:"Sonke isikhathi", chg30Label:"Ushintsho lwezinsuku eziyi-30", chg7Label:"Ushintsho lwezinsuku eziyi-7",
+          athNow:"Manje", athOf:"kwenani eliphakeme kunawo wonke", athHigh:"Inani eliphakeme kunawo wonke",
+          pointsTitle:"Amaphuzu abanikazi", pointsTag:"Farming · Isimo",
+          pointsStatusTitle:"Ayikho uhlelo lwamaphuzu olusemthethweni — okwamanje",
+          pointsStatusBody:"Kulesi sithombe sedatha, i-Raiku ayinalo uhlelo lwamaphuzu lomphakathi lwabanikazi be-rkuSOL, futhi asikho isamba samaphuzu esishicilelwe ngokusemthethweni ndawo. Lokho abanikazi abakutholayo namuhla inzuzo: i-APY engenhla, ekhokhwa ngesilinganiso sokushintshana se-rkuSOL esikhulayo. Uma i-Raiku imemezela uhlelo lwamaphuzu, luzovela kuqala eziteshini zayo ezisemthethweni — qaphela noma yisiphi isimangalo samaphuzu esingekho emthethweni.",
+          trackerTitle:"Ilogi yakho yamaphuzu",
+          trackerNote:"Ufarming amaphuzu ezinkundleni eziklomelisa umsebenzi we-rkuSOL? Gcina isamba sakho lapha. Okufakiwe kuhlala kuphela ngenkathi leli khasi livuliwe — akukho okugcinwayo noma okuthunyelwa ndawo.",
+          platformLabel:"Inkundla", pointsLabel:"Amaphuzu", noteLabel:"Inothi (okuzikhethela)", addBtn:"Engeza okufakiwe",
+          optOther:"Okunye", emptyLog:"Akukho okufakiwe okwamanje.", totalPoints:"Isamba samaphuzu aqoshiwe", deleteLabel:"Susa",
+          aboutTitle:"Inzuzo ivelaphi", aboutTag:"rkuSOL · Imali engenayo",
+          aboutIntro:"Ithokheni ye-liquid staking evamile ithola imali emiklomelweni yokwehla kwamandla emali futhi, kakhulu, ku-MEV. I-rkuSOL ingeza umthombo wesithathu ngaphezulu: imali engenayo yendali yokuxhumanisa i-blockspace ye-Raiku.",
+          earn1T:"Imiklomelo ye-staking",
+          earn1B:"I-SOL e-stake ne-validator ye-Raiku ithola imiklomelo yokwehla kwamandla yenethiwekhi ye-Solana. I-validator ikhokhisa ikhomishini engu-0% nekhomishini ye-MEV engu-0%, ngakho imiklomelo idlulela kubanikazi be-stake ngokugcwele.",
+          earn2T:"MEV",
+          earn2B:"Inani eliphezulu elikhishwayo (MEV) elibanjwa yi-validator ngenkathi ikhiqiza amabhulokhi kwabelwana ngalo ne-pool, kuphakamisa isilinganiso sokushintshana se-rkuSOL ngokuhamba kwesikhathi.",
+          earn3T:"Imali engenayo yendali",
+          earn3B:"I-Raiku ithengisa i-blockspace eqinisekisiwe ngendali ye-Ahead-of-Time (AOT) ne-Just-in-Time (JIT) ezinkampanini zokuhweba ezidinga ukufakwa okuqinisekisiwe. Leyo mali yokuxhumanisa igeleza ibuyele kubanikazi be-rkuSOL — okokuqala ku-LST ye-Solana.",
+          howTitle:"Stake ngezinyathelo ezintathu", howTag:"stake.raiku.com",
+          step1:"Vula i-stake.raiku.com bese uxhuma i-wallet ye-Solana efana ne-Phantom noma i-Solflare.",
+          step2:"Faka inani le-SOL ofuna uku-stake bese uqinisekisa. Uthola i-rkuSOL ngokubuyisela, ngesilinganiso sokushintshana sosuku.",
+          step3:"Bamba i-rkuSOL ukuze uthole inzuzo, uyisebenzise kuyo yonke i-DeFi ye-Solana, noma uyikhiphe ibuyele ku-SOL noma kunini kusuka ekhasini elifanayo.",
+          stakeBtn:"Stake ku-stake.raiku.com", sourcesTitle:"Imithombo",
+          srcLlama:"I-TVL yanamuhla nomlando ogcwele we-TVL yansuku zonke, kufaka phakathi inani eliphakeme kunawo wonke.",
+          srcPhantom:"Inani labanikazi nokunikezwa okusakazwayo kwe-mint ye-rkuSOL.",
+          srcSanctum:"I-APY efinyelelwe ye-rkuSOL kuma-epoch ayi-10 adlule.",
+          srcRaiku:"Ikhasi le-staking elisemthethweni le-Raiku — isamba se-SOL e-stake nesilinganiso sokushintshana esibukhoma.",
+          srcCompass:"Iphrofayela ye-validator: ikhomishini, isikhathi sokusebenza nokusebenza.",
+          srcBrandName:"Uphawu",
+          srcBrand:"Imibala nohlobo lwezinhlamvu zaleli khasi kulandela ikhithi yophawu esemthethweni ye-Raiku: Paper, Ink ne-Geist.",
+          footerLeft:"Ideshibhodi yomphakathi ezimele. Ayihlangene ne-Raiku.",
+          chartAria:"Ishadi lomugqa lesamba senani elikhiyiwe le-rkuSOL ngamadola ase-US"
+        }
+      });
+
+      /* ——— App logic ——— */
+      var curLang = "en";
+      var chartRange = "all";
+      var entries = [];
+
+      function dict() { return I18N[curLang] || I18N.en; }
+      function nf(opts) { return new Intl.NumberFormat(LOCALES[curLang] || "en-US", opts || {}); }
+      function fmtInt(v) { return nf({ maximumFractionDigits: 0 }).format(v); }
+      function fmtUSD(v) { return "$" + nf({ maximumFractionDigits: 0 }).format(v); }
+      function fmtUSDM(v) { return "$" + nf({ minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v / 1000000) + "M"; }
+      function fmtDate(iso) {
+        var p = iso.split("-");
+        var m = MONTHS[curLang] || MONTHS.en;
+        return parseInt(p[2], 10) + " " + m[parseInt(p[1], 10) - 1] + " " + p[0];
+      }
+      function fmtPct(v) {
+        return (v < 0 ? "−" : "+") + nf({ minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(Math.abs(v)) + "%";
+      }
+
+      function renderNumbers() {
+        var rate = SNAP.stakedSOL / SNAP.supply;
+        var price = SNAP.tvlUSD / SNAP.supply;
+        document.getElementById("figStaked").textContent = fmtInt(Math.round(SNAP.stakedSOL));
+        document.getElementById("statTvl").textContent = fmtUSD(SNAP.tvlUSD);
+        document.getElementById("statHolders").textContent = fmtInt(SNAP.holders);
+        document.getElementById("statSupply").textContent = fmtInt(SNAP.supply);
+        document.getElementById("statApy").textContent = nf({ minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(SNAP.apy) + "%";
+        document.getElementById("statRate").textContent = nf({ minimumFractionDigits: 4, maximumFractionDigits: 4 }).format(rate);
+        document.getElementById("statPrice").textContent = "$" + nf({ minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(price);
+        var last = TVL[TVL.length - 1][1];
+        var v30 = TVL[TVL.length - 31][1];
+        var v7 = TVL[TVL.length - 8][1];
+        document.getElementById("chg30").textContent = fmtPct((last / v30 - 1) * 100);
+        document.getElementById("chg7").textContent = fmtPct((last / v7 - 1) * 100);
+        document.getElementById("athNowVal").textContent = fmtUSDM(SNAP.tvlUSD);
+        var pct = SNAP.tvlUSD / SNAP.athUSD * 100;
+        document.getElementById("athPct").textContent = nf({ minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(pct) + "%";
+        document.getElementById("athHighVal").textContent = fmtUSDM(SNAP.athUSD) + " · " + fmtDate("2026-09-26");
+        document.getElementById("athFill").style.width = pct.toFixed(1) + "%";
+      }
+
+      function renderChart() {
+        var data = chartRange === "30" ? TVL.slice(TVL.length - 31) : TVL;
+        var W = 720, H = 250, padL = 6, padR = 6, padT = 26, padB = 26;
+        var iw = W - padL - padR, ih = H - padT - padB;
+        var min = Math.min.apply(null, data.map(function (d) { return d[1]; }));
+        var max = Math.max.apply(null, data.map(function (d) { return d[1]; }));
+        var span = (max - min) * 1.12 || 1;
+        min = min - (max - min) * 0.06;
+        function X(i) { return padL + (i / (data.length - 1)) * iw; }
+        function Y(v) { return padT + (1 - (v - min) / span) * ih; }
+        var line = "", area = "";
+        data.forEach(function (d, i) {
+          var x = X(i).toFixed(1), y = Y(d[1]).toFixed(1);
+          line += (i === 0 ? "M" : "L") + x + "," + y + " ";
+        });
+        area = line + "L" + X(data.length - 1).toFixed(1) + "," + (padT + ih) + " L" + X(0).toFixed(1) + "," + (padT + ih) + " Z";
+        var athIdx = 0;
+        data.forEach(function (d, i) { if (d[1] === max) athIdx = i; });
+        var lastV = data[data.length - 1][1];
+        var svg =
+          '<svg viewBox="0 0 ' + W + " " + H + '" role="presentation" aria-hidden="true">' +
+          '<line x1="' + padL + '" y1="' + Y(max).toFixed(1) + '" x2="' + (W - padR) + '" y2="' + Y(max).toFixed(1) + '" stroke="var(--ink-35)" stroke-width="1" stroke-dasharray="4 4"/>' +
+          '<text class="chart-axis" x="' + padL + '" y="' + (Y(max) - 7).toFixed(1) + '">' + fmtUSDM(max) + "</text>" +
+          '<text class="chart-axis" x="' + (W - padR) + '" y="' + (Y(max) - 7).toFixed(1) + '" text-anchor="end">' + fmtDate(data[athIdx][0]) + "</text>" +
+          '<path d="' + area + '" fill="var(--chart-fill)"/>' +
+          '<path d="' + line + '" fill="none" stroke="var(--chart)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
+          '<circle cx="' + X(data.length - 1).toFixed(1) + '" cy="' + Y(lastV).toFixed(1) + '" r="3.5" fill="var(--chart)"/>' +
+          '<text class="chart-axis" x="' + padL + '" y="' + (H - 6) + '">' + fmtDate(data[0][0]) + "</text>" +
+          '<text class="chart-axis" x="' + (W - padR) + '" y="' + (H - 6) + '" text-anchor="end">' + fmtDate(data[data.length - 1][0]) + " · " + fmtUSDM(lastV) + "</text>" +
+          '<text class="chart-axis" x="' + padL + '" y="' + (Y(min + (max - min) * 0.06) + 14).toFixed(1) + '">' + fmtUSDM(Math.min.apply(null, data.map(function (d) { return d[1]; }))) + "</text>" +
+          "</svg>";
+        var box = document.getElementById("chartBox");
+        box.innerHTML = svg;
+        box.setAttribute("aria-label", dict().chartAria);
+      }
+
+      function renderEntries() {
+        var list = document.getElementById("tlist");
+        var d = dict();
+        if (!entries.length) {
+          list.innerHTML = '<p class="empty">' + d.emptyLog + "</p>";
+        } else {
+          list.innerHTML = entries.map(function (e, i) {
+            return '<div class="trow">' +
+              '<span class="plat">' + e.platform + "</span>" +
+              '<span class="pts">' + nf({ maximumFractionDigits: 2 }).format(e.points) + "</span>" +
+              '<span class="tnote">' + e.note + "</span>" +
+              '<button type="button" class="del-btn" data-del="' + i + '">' + d.deleteLabel + "</button>" +
+              "</div>";
+          }).join("");
+        }
+        var total = entries.reduce(function (s, e) { return s + e.points; }, 0);
+        document.getElementById("ttotalVal").textContent = nf({ maximumFractionDigits: 2 }).format(total);
+        var btns = list.querySelectorAll("[data-del]");
+        for (var i = 0; i < btns.length; i++) {
+          btns[i].addEventListener("click", function () {
+            entries.splice(parseInt(this.getAttribute("data-del"), 10), 1);
+            renderEntries();
+          });
+        }
+      }
+
+      function esc(s) {
+        return String(s).replace(/[&<>"']/g, function (c) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+        });
+      }
+
+      function applyLang(lang) {
+        curLang = I18N[lang] ? lang : "en";
+        var d = dict();
+        document.documentElement.lang = curLang;
+        var els = document.querySelectorAll("[data-i18n]");
+        for (var i = 0; i < els.length; i++) {
+          var k = els[i].getAttribute("data-i18n");
+          if (d[k]) els[i].textContent = d[k];
+        }
+        document.getElementById("snapBadge").textContent = d.snapBadge;
+        document.getElementById("footerSnap").textContent = d.footerSnap;
+        renderNumbers();
+        renderChart();
+        renderEntries();
+      }
+
+      document.getElementById("langSel").addEventListener("change", function () { applyLang(this.value); });
+      document.getElementById("btn30").addEventListener("click", function () {
+        chartRange = "30";
+        this.setAttribute("aria-pressed", "true");
+        document.getElementById("btnAll").setAttribute("aria-pressed", "false");
+        renderChart();
+      });
+      document.getElementById("btnAll").addEventListener("click", function () {
+        chartRange = "all";
+        this.setAttribute("aria-pressed", "true");
+        document.getElementById("btn30").setAttribute("aria-pressed", "false");
+        renderChart();
+      });
+      document.getElementById("tform").addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        var pts = parseFloat(document.getElementById("fPoints").value);
+        if (isNaN(pts) || pts < 0) return;
+        entries.push({
+          platform: esc(document.getElementById("fPlatform").value),
+          points: pts,
+          note: esc(document.getElementById("fNote").value.trim())
+        });
+        document.getElementById("fPoints").value = "";
+        document.getElementById("fNote").value = "";
+        renderEntries();
+      });
+
+      applyLang("en");
+    </script>
+    </script>
+  </body>
+</html>
