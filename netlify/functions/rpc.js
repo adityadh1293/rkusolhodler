@@ -23,7 +23,8 @@ const ALLOWED_METHODS = new Set([
   "getSignaturesForAddress",
   "getTransaction",
   "getProgramAccounts",
-  "getTokenLargestAccounts"
+  "getTokenLargestAccounts",
+  "getTokenSupply"
 ]);
 
 const MAX_BODY_BYTES = 8192;
