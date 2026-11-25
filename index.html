@@ -4,6 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net data:; img-src 'self' data: blob:; connect-src https://api.mainnet-beta.solana.com https://solana-rpc.publicnode.com https://solana.drpc.org; object-src 'none'; base-uri 'none'; form-action 'self'" />
+    <meta name="referrer" content="no-referrer" />
     <meta name="description" content="A public dashboard for Raiku's rkuSOL liquid staking: total SOL staked, TVL, holders, APY and TVL history, from public sources." />
     <link rel="icon" href="data:," />
     <title>rkuSOL Staking — Raiku Public Dashboard</title>
@@ -186,6 +188,86 @@
       .ttotal .val { font-family: "Geist Mono", ui-monospace, monospace; font-size: 28px; }
       .empty { color: var(--ink-55); padding: 16px 0; margin: 0; }
 
+      /* ——— Wallet lookup ——— */
+      .wform { display: grid; gap: 12px; grid-template-columns: 1fr; margin-top: 20px; }
+      @media (min-width: 760px) { .wform { grid-template-columns: 1fr auto; align-items: end; } }
+      .wform label { display: block; font-size: 11px; text-transform: uppercase; color: var(--ink-70); margin-bottom: 6px;
+        font-family: "Geist Mono", ui-monospace, monospace; letter-spacing: 0.05em; }
+      .wform input { width: 100%; min-height: 44px; padding: 8px 10px;
+        background: var(--field); border: 1px solid var(--ink-35); border-radius: 4px;
+        font-family: "Geist Mono", ui-monospace, monospace; font-size: 14px; }
+      .add-btn[disabled] { opacity: 0.55; cursor: wait; }
+      .wstatus { min-height: 24px; margin: 12px 0 0; color: var(--ink-70); font-size: 14px; }
+      .wstatus.err { color: var(--down); }
+      .wresults { margin-top: 18px; }
+      .wresults[hidden] { display: none; }
+      .wmeta { margin-top: 14px; font-size: 13.5px; color: var(--ink-55);
+        display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; }
+      .wmeta[hidden] { display: none; }
+      .wmeta a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
+
+
+      /* ——— rkuSOL Holder Card ———
+         A dark share card in the style of the community holder cards:
+         deep navy ground, lime frame, generated identicon avatar.
+         Rendered only from values the visitor's own lookup returned. */
+      .hcard {
+        margin-top: 22px; background: #0B1322; color: #E9EEF5;
+        border: 2px solid #B7E34A; border-radius: 24px;
+        padding: 26px 26px 22px; position: relative; overflow: hidden;
+        box-shadow: 0 18px 44px rgba(15, 29, 6, 0.28);
+      }
+      .hcard::before {
+        content: ""; position: absolute; inset: 0; pointer-events: none;
+        background-image:
+          linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px);
+        background-size: 44px 44px;
+      }
+      .hcard > * { position: relative; }
+      .hcard[hidden] { display: none; }
+      .hc-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px 20px; flex-wrap: wrap; }
+      .hc-brand { display: flex; align-items: center; gap: 14px; }
+      .hc-logo { width: 62px; height: 62px; border-radius: 50%; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex: none; }
+      .hc-logo svg { width: 36px; height: 36px; display: block; }
+      .hc-name { font-size: 26px; font-weight: 700; line-height: 1.1; color: #FFFFFF; }
+      .hc-sub { color: #B7E34A; font-weight: 600; font-size: 17px; margin-top: 2px; }
+      .hc-rank { text-align: right; }
+      .hc-rank .num { color: #B7E34A; font-size: 42px; font-weight: 800; line-height: 1;
+        font-family: "Geist Mono", ui-monospace, monospace; }
+      .hc-rank .lab { color: #AEB9C6; font-size: 13px; margin-top: 6px; }
+      .hc-mid { display: flex; gap: 20px; margin-top: 26px; flex-wrap: wrap; align-items: center; }
+      .hc-avatar { width: 116px; height: 116px; border-radius: 50%; overflow: hidden; flex: none; background: #1A2A44; }
+      .hc-avatar svg { width: 100%; height: 100%; display: block; }
+      .hc-id { flex: 1 1 190px; min-width: 180px; }
+      .hc-user { font-size: clamp(23px, 4.6vw, 33px); font-weight: 700; color: #FFFFFF; line-height: 1.15; overflow-wrap: anywhere; }
+      .hc-tier { color: #C3CAD6; font-size: 18px; margin-top: 5px; }
+      .hc-addr { font-size: 11.5px; color: #7E8FA6; margin-top: 10px; overflow-wrap: anywhere; }
+      .hc-bal { border: 1.5px solid #B7E34A; border-radius: 16px; padding: 15px 20px 13px; flex: 0 1 250px; min-width: 210px; }
+      .hc-bal .lab { color: #9FB0C3; font-size: 12.5px; letter-spacing: 0.09em; }
+      .hc-bal .val { color: #B7E34A; font-size: 37px; font-weight: 800; line-height: 1.2;
+        font-family: "Geist Mono", ui-monospace, monospace; }
+      .hc-bal .unit { color: #E9EEF5; font-size: 14.5px; }
+      .hc-grid { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 20px; }
+      @media (min-width: 620px) { .hc-grid { grid-template-columns: 1fr 1fr; } }
+      .hc-cell { background: #131E33; border-radius: 14px; padding: 15px 20px 13px; }
+      .hc-cell .lab { color: #8E9DB2; font-size: 12.5px; letter-spacing: 0.09em; }
+      .hc-cell .val { font-size: 31px; font-weight: 800; color: #FFFFFF; line-height: 1.25;
+        font-family: "Geist Mono", ui-monospace, monospace; }
+      .hc-cell .val.lime { color: #B7E34A; }
+      .hc-foot { color: #9FB0C3; font-size: 13.5px; margin: 16px 0 0; }
+      .hc-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+      .hc-btn {
+        display: inline-flex; align-items: center; min-height: 42px; padding: 8px 18px;
+        border-radius: 999px; border: 1.5px solid #B7E34A; color: #B7E34A;
+        background: transparent; font-weight: 600; font-size: 14.5px; cursor: pointer;
+        text-decoration: none; font-family: inherit;
+      }
+      .hc-btn.primary { background: #B7E34A; color: #0B1322; }
+      .hc-btn:hover { filter: brightness(1.1); }
+      .hc-meta { font-size: 13.5px; color: var(--ink-55); margin-top: 12px; max-width: 72ch; }
+      .hc-meta[hidden] { display: none; }
+
       /* ——— About / how ——— */
       .earn { border-top: 1px solid var(--ink-18); margin-top: 20px; }
       .earn-row { display: grid; gap: 4px 24px; padding: 18px 0; border-bottom: 1px solid var(--ink-18); }
@@ -289,6 +371,98 @@
           <p class="sub" data-i18n="statPriceSub">Implied by TVL ÷ supply (DefiLlama, Phantom).</p>
         </div>
       </div>
+
+      <section aria-labelledby="walletH">
+        <div class="sec-head">
+          <h2 id="walletH" data-wi18n="walletTitle">Check a wallet</h2>
+          <span class="mono" data-wi18n="walletTag">Solana · On-chain lookup</span>
+        </div>
+        <p class="sec-intro" data-wi18n="walletIntro">Paste any Solana wallet address to read its rkuSOL position straight from the chain: total tokens held, the SOL those tokens represent, and the wallet's share of the total supply. Balances are fetched live from a public Solana RPC the moment you check; token values use this page's snapshot rate and price.</p>
+        <form class="wform" id="wform">
+          <div>
+            <label for="wAddr" data-wi18n="walletLabel">Solana wallet address</label>
+            <input id="wAddr" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="44" placeholder="Paste a Solana address…" />
+          </div>
+          <button type="submit" class="add-btn" id="wBtn" data-wi18n="checkBtn">Check wallet</button>
+        </form>
+        <p class="wstatus" id="wStatus" role="status" aria-live="polite"></p>
+        <div class="hcard" id="hCard" hidden>
+          <div class="hc-top">
+            <div class="hc-brand">
+              <div class="hc-logo" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><path fill-rule="evenodd" fill="#223D0E" d="M12 38V10h13c6.1 0 10.5 4 10.5 9.2 0 4-2.3 7.2-6 8.4L36.5 38h-9.2l-6.1-9.2H20V38h-8zm8-13.8h4.8c1.9 0 3-1.3 3-2.9s-1.1-2.9-3-2.9H20v5.8z"/></svg></div>
+              <div>
+                <div class="hc-name">Raiku</div>
+                <div class="hc-sub" id="hcSub">rkuSOL Holder Card</div>
+              </div>
+            </div>
+            <div class="hc-rank">
+              <div class="num" id="hcRank">—</div>
+              <div class="lab" id="hcRankLab">leaderboard rank</div>
+            </div>
+          </div>
+          <div class="hc-mid">
+            <div class="hc-avatar" id="hcAvatar" aria-hidden="true"></div>
+            <div class="hc-id">
+              <div class="hc-user" id="hcUser">—</div>
+              <div class="hc-tier" id="hcTier">—</div>
+              <div class="hc-addr mono" id="hcAddr"></div>
+            </div>
+            <div class="hc-bal">
+              <div class="lab mono" id="hcBalLab">RKUSOL BALANCE</div>
+              <div class="val" id="hcBal">0.00</div>
+              <div class="unit">rkuSOL</div>
+            </div>
+          </div>
+          <div class="hc-grid">
+            <div class="hc-cell">
+              <div class="lab mono" id="hcDaysLab">DAYS HELD</div>
+              <div class="val" id="hcDays">0</div>
+            </div>
+            <div class="hc-cell">
+              <div class="lab mono" id="hcScoreLab">SCORE</div>
+              <div class="val lime" id="hcScore">0</div>
+            </div>
+          </div>
+          <p class="hc-foot" id="hcScoreNote">Score = on-chain balance-days. Days Held starts at first detected rkuSOL acquisition.</p>
+          <div class="hc-actions">
+            <button type="button" class="hc-btn primary" id="hcDownload">Download card (PNG)</button>
+            <a class="hc-btn" id="hcSolscan" href="#" target="_blank" rel="noopener noreferrer">View on Solscan</a>
+          </div>
+        </div>
+        <p class="hc-meta" id="hcMeta" hidden></p>
+
+        <div class="ledger wresults" id="wResults" role="list" hidden>
+          <div class="cell" role="listitem">
+            <p class="lab mono" data-wi18n="resRku">rkuSOL held</p>
+            <div class="val" id="wRku">—</div>
+          </div>
+          <div class="cell" role="listitem">
+            <p class="lab mono" data-wi18n="resSol">SOL balance</p>
+            <div class="val" id="wSol">—</div>
+          </div>
+          <div class="cell" role="listitem">
+            <p class="lab mono" data-wi18n="resStake">Stake value</p>
+            <div class="val" id="wStake">—</div>
+          </div>
+          <div class="cell" role="listitem">
+            <p class="lab mono" data-wi18n="resUsd">Value</p>
+            <div class="val" id="wUsd">—</div>
+          </div>
+          <div class="cell" role="listitem">
+            <p class="lab mono" data-wi18n="resShare">Share of supply</p>
+            <div class="val" id="wShare">—</div>
+          </div>
+          <div class="cell" role="listitem">
+            <p class="lab mono" data-wi18n="resPoints">Holder points</p>
+            <div class="val">—</div>
+            <p class="sub" data-wi18n="pointsNone">None published — Raiku runs no official points programme, so no points balance exists on-chain.</p>
+          </div>
+        </div>
+        <p class="wmeta" id="wMeta" hidden>
+          <span class="mono" id="wChecked"></span>
+          <a id="wExplorer" href="#" target="_blank" rel="noopener noreferrer">View on Solscan</a>
+        </p>
+      </section>
 
       <section aria-labelledby="chartH">
         <div class="sec-head">
@@ -1151,27 +1325,42 @@
       function renderEntries() {
         var list = document.getElementById("tlist");
         var d = dict();
+        while (list.firstChild) list.removeChild(list.firstChild);
         if (!entries.length) {
-          list.innerHTML = '<p class="empty">' + d.emptyLog + "</p>";
+          var p = document.createElement("p");
+          p.className = "empty";
+          p.textContent = d.emptyLog;
+          list.appendChild(p);
         } else {
-          list.innerHTML = entries.map(function (e, i) {
-            return '<div class="trow">' +
-              '<span class="plat">' + e.platform + "</span>" +
-              '<span class="pts">' + nf({ maximumFractionDigits: 2 }).format(e.points) + "</span>" +
-              '<span class="tnote">' + e.note + "</span>" +
-              '<button type="button" class="del-btn" data-del="' + i + '">' + d.deleteLabel + "</button>" +
-              "</div>";
-          }).join("");
-        }
-        var total = entries.reduce(function (s, e) { return s + e.points; }, 0);
-        document.getElementById("ttotalVal").textContent = nf({ maximumFractionDigits: 2 }).format(total);
-        var btns = list.querySelectorAll("[data-del]");
-        for (var i = 0; i < btns.length; i++) {
-          btns[i].addEventListener("click", function () {
-            entries.splice(parseInt(this.getAttribute("data-del"), 10), 1);
-            renderEntries();
+          entries.forEach(function (e, i) {
+            var row = document.createElement("div");
+            row.className = "trow";
+            var plat = document.createElement("span");
+            plat.className = "plat";
+            plat.textContent = e.platform;
+            var pts = document.createElement("span");
+            pts.className = "pts";
+            pts.textContent = nf({ maximumFractionDigits: 2 }).format(e.points);
+            var note = document.createElement("span");
+            note.className = "tnote";
+            note.textContent = e.note;
+            var btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "del-btn";
+            btn.textContent = d.deleteLabel;
+            btn.addEventListener("click", function () {
+              entries.splice(i, 1);
+              renderEntries();
+            });
+            row.appendChild(plat);
+            row.appendChild(pts);
+            row.appendChild(note);
+            row.appendChild(btn);
+            list.appendChild(row);
           });
         }
+        var total = entries.reduce(function (sum, e) { return sum + e.points; }, 0);
+        document.getElementById("ttotalVal").textContent = nf({ maximumFractionDigits: 2 }).format(total);
       }
 
       function esc(s) {
@@ -1194,6 +1383,7 @@
         renderNumbers();
         renderChart();
         renderEntries();
+        applyWalletLang();
       }
 
       document.getElementById("langSel").addEventListener("change", function () { applyLang(this.value); });
@@ -1214,17 +1404,676 @@
         var pts = parseFloat(document.getElementById("fPoints").value);
         if (isNaN(pts) || pts < 0) return;
         entries.push({
-          platform: esc(document.getElementById("fPlatform").value),
+          platform: document.getElementById("fPlatform").value,
           points: pts,
-          note: esc(document.getElementById("fNote").value.trim())
+          note: document.getElementById("fNote").value.trim()
         });
         document.getElementById("fPoints").value = "";
         document.getElementById("fNote").value = "";
         renderEntries();
       });
 
+      /* ——— Wallet lookup ———
+         Reads a wallet's rkuSOL token accounts and SOL balance live from
+         public Solana RPC endpoints, in the visitor's browser, at the
+         moment they ask. Nothing is stored or sent anywhere else.
+         Raiku publishes no official points, so the points cell says so
+         instead of inventing a number. Values use the snapshot rate. */
+      var RKU_MINT = "rkubjTrZYioRSeXwDnhwGQzvW3qkcin72JSxUt3WMVp";
+      var RPC_ENDPOINTS = [
+        "https://api.mainnet-beta.solana.com",
+        "https://solana-rpc.publicnode.com",
+        "https://solana.drpc.org"
+      ];
+      var WI18N = {
+        en: { walletTitle:"Check a wallet", walletTag:"Solana · On-chain lookup",
+          walletIntro:"Paste any Solana wallet address to read its rkuSOL position straight from the chain: total tokens held, the SOL those tokens represent, and the wallet's share of the total supply. Balances are fetched live from a public Solana RPC the moment you check; token values use this page's snapshot rate and price.",
+          walletLabel:"Solana wallet address", walletPlaceholder:"Paste a Solana address…", checkBtn:"Check wallet", checking:"Reading the chain…",
+          resRku:"rkuSOL held", resSol:"SOL balance", resStake:"Stake value", resUsd:"Value", resShare:"Share of supply", resPoints:"Holder points",
+          pointsNone:"None published — Raiku runs no official points programme, so no points balance exists on-chain.",
+          invalidAddr:"That doesn't look like a valid Solana address. Please check it and try again.",
+          lookupFail:"The lookup failed — the public Solana RPC did not answer. Please try again in a moment.",
+          checkedAt:"Checked", viewExplorer:"View on Solscan" },
+        id: { walletTitle:"Cek dompet", walletTag:"Solana · Pencarian on-chain",
+          walletIntro:"Tempel alamat dompet Solana mana pun untuk membaca posisi rkuSOL-nya langsung dari chain: total token yang dipegang, berapa SOL yang diwakili token itu, dan porsi dompet tersebut dari total suplai. Saldo diambil live dari RPC publik Solana saat kamu mengecek; nilai token memakai kurs dan harga cuplikan halaman ini.",
+          walletLabel:"Alamat dompet Solana", walletPlaceholder:"Tempel alamat Solana…", checkBtn:"Cek dompet", checking:"Membaca chain…",
+          resRku:"rkuSOL yang dipegang", resSol:"Saldo SOL", resStake:"Nilai stake", resUsd:"Nilai", resShare:"Porsi dari suplai", resPoints:"Poin holder",
+          pointsNone:"Tidak ada yang diterbitkan — Raiku tidak menjalankan program poin resmi, jadi tidak ada saldo poin di chain.",
+          invalidAddr:"Alamat itu sepertinya bukan alamat Solana yang valid. Periksa lagi lalu coba kembali.",
+          lookupFail:"Pencarian gagal — RPC publik Solana tidak menjawab. Coba lagi sebentar lagi.",
+          checkedAt:"Dicek", viewExplorer:"Lihat di Solscan" },
+        hi: { walletTitle:"वॉलेट जांचें", walletTag:"Solana · ऑन-चेन खोज",
+          walletIntro:"किसी भी Solana वॉलेट पते को चिपकाकर उसकी rkuSOL स्थिति सीधे चेन से पढ़ें: कुल रखे गए टोकन, वे टोकन कितने SOL दर्शाते हैं, और कुल आपूर्ति में वॉलेट की हिस्सेदारी। जब आप जांचते हैं तो बैलेंस सार्वजनिक Solana RPC से लाइव लाए जाते हैं; टोकन मूल्य इस पेज की स्नैपशॉट दर और कीमत का उपयोग करते हैं।",
+          walletLabel:"Solana वॉलेट पता", walletPlaceholder:"Solana पता चिपकाएँ…", checkBtn:"वॉलेट जांचें", checking:"चेन पढ़ा जा रहा है…",
+          resRku:"रखा गया rkuSOL", resSol:"SOL बैलेंस", resStake:"स्टेक मूल्य", resUsd:"मूल्य", resShare:"आपूर्ति में हिस्सा", resPoints:"होल्डर पॉइंट्स",
+          pointsNone:"कोई प्रकाशित नहीं — Raiku कोई आधिकारिक पॉइंट्स कार्यक्रम नहीं चलाता, इसलिए चेन पर कोई पॉइंट्स बैलेंस मौजूद नहीं है।",
+          invalidAddr:"यह मान्य Solana पता नहीं लगता। कृपया जांचकर फिर प्रयास करें।",
+          lookupFail:"खोज विफल — सार्वजनिक Solana RPC ने जवाब नहीं दिया। कृपया थोड़ी देर बाद फिर प्रयास करें।",
+          checkedAt:"जांचा गया", viewExplorer:"Solscan पर देखें" },
+        zh: { walletTitle:"查询钱包", walletTag:"Solana · 链上查询",
+          walletIntro:"粘贴任意 Solana 钱包地址，即可直接从链上读取它的 rkuSOL 持仓：持有的代币总量、这些代币代表的 SOL 数量，以及该钱包占总供应量的份额。查询时余额会从公共 Solana RPC 实时获取；代币价值采用本页快照的汇率与价格。",
+          walletLabel:"Solana 钱包地址", walletPlaceholder:"粘贴 Solana 地址…", checkBtn:"查询钱包", checking:"正在读取链上数据…",
+          resRku:"持有的 rkuSOL", resSol:"SOL 余额", resStake:"质押价值", resUsd:"价值", resShare:"占供应量份额", resPoints:"持有人积分",
+          pointsNone:"无官方发布——Raiku 没有官方积分计划，因此链上不存在积分余额。",
+          invalidAddr:"这似乎不是有效的 Solana 地址。请检查后重试。",
+          lookupFail:"查询失败——公共 Solana RPC 没有响应。请稍后重试。",
+          checkedAt:"查询时间", viewExplorer:"在 Solscan 查看" },
+        th: { walletTitle:"ตรวจสอบวอลเล็ต", walletTag:"Solana · ค้นหาบนเชน",
+          walletIntro:"วางที่อยู่วอลเล็ต Solana ใดก็ได้เพื่ออ่านสถานะ rkuSOL จากเชนโดยตรง: จำนวนโทเคนทั้งหมดที่ถือ, โทเคนเหล่านั้นแทน SOL เท่าใด และสัดส่วนของวอลเล็ตจากอุปทานทั้งหมด ยอดคงเหลือจะถูกดึงสดจาก Solana RPC สาธารณะเมื่อคุณตรวจสอบ ส่วนมูลค่าโทเคนใช้อัตราและราคาของภาพรวมในหน้านี้",
+          walletLabel:"ที่อยู่วอลเล็ต Solana", walletPlaceholder:"วางที่อยู่ Solana…", checkBtn:"ตรวจสอบวอลเล็ต", checking:"กำลังอ่านเชน…",
+          resRku:"rkuSOL ที่ถือ", resSol:"ยอดคงเหลือ SOL", resStake:"มูลค่าสเตก", resUsd:"มูลค่า", resShare:"สัดส่วนของอุปทาน", resPoints:"คะแนนผู้ถือ",
+          pointsNone:"ไม่มีการเผยแพร่ — Raiku ไม่มีโปรแกรมคะแนนอย่างเป็นทางการ จึงไม่มีคะแนนคงเหลือบนเชน",
+          invalidAddr:"ที่อยู่นี้ดูไม่เหมือนที่อยู่ Solana ที่ถูกต้อง โปรดตรวจสอบและลองอีกครั้ง",
+          lookupFail:"การค้นหาล้มเหลว — Solana RPC สาธารณะไม่ตอบสนอง โปรดลองอีกครั้งในอีกสักครู่",
+          checkedAt:"ตรวจสอบเมื่อ", viewExplorer:"ดูบน Solscan" },
+        vi: { walletTitle:"Kiểm tra ví", walletTag:"Solana · Tra cứu on-chain",
+          walletIntro:"Dán bất kỳ địa chỉ ví Solana nào để đọc vị thế rkuSOL của nó trực tiếp từ chain: tổng token đang nắm giữ, số SOL mà các token đó đại diện, và tỷ trọng của ví trong tổng nguồn cung. Số dư được lấy trực tiếp từ Solana RPC công khai ngay khi bạn kiểm tra; giá trị token dùng tỷ giá và giá của ảnh chụp trên trang này.",
+          walletLabel:"Địa chỉ ví Solana", walletPlaceholder:"Dán địa chỉ Solana…", checkBtn:"Kiểm tra ví", checking:"Đang đọc chain…",
+          resRku:"rkuSOL đang giữ", resSol:"Số dư SOL", resStake:"Giá trị stake", resUsd:"Giá trị", resShare:"Tỷ trọng nguồn cung", resPoints:"Điểm holder",
+          pointsNone:"Không có công bố — Raiku không có chương trình điểm chính thức, nên không tồn tại số dư điểm on-chain.",
+          invalidAddr:"Địa chỉ này có vẻ không phải địa chỉ Solana hợp lệ. Vui lòng kiểm tra và thử lại.",
+          lookupFail:"Tra cứu thất bại — Solana RPC công khai không phản hồi. Vui lòng thử lại sau ít phút.",
+          checkedAt:"Đã kiểm tra", viewExplorer:"Xem trên Solscan" },
+        ru: { walletTitle:"Проверить кошелёк", walletTag:"Solana · Поиск в блокчейне",
+          walletIntro:"Вставьте любой адрес кошелька Solana, чтобы прочитать его позицию rkuSOL прямо из блокчейна: всего удерживаемых токенов, сколько SOL эти токены представляют, и долю кошелька в общем предложении. Балансы запрашиваются вживую из публичного Solana RPC в момент проверки; стоимость токенов использует курс и цену снимка этой страницы.",
+          walletLabel:"Адрес кошелька Solana", walletPlaceholder:"Вставьте адрес Solana…", checkBtn:"Проверить кошелёк", checking:"Читаем блокчейн…",
+          resRku:"Удерживается rkuSOL", resSol:"Баланс SOL", resStake:"Стоимость стейка", resUsd:"Стоимость", resShare:"Доля предложения", resPoints:"Баллы держателя",
+          pointsNone:"Не опубликовано — у Raiku нет официальной программы баллов, поэтому баланса баллов в блокчейне не существует.",
+          invalidAddr:"Похоже, это не действительный адрес Solana. Проверьте его и попробуйте снова.",
+          lookupFail:"Поиск не удался — публичный Solana RPC не ответил. Попробуйте ещё раз через минуту.",
+          checkedAt:"Проверено", viewExplorer:"Смотреть на Solscan" },
+        sw: { walletTitle:"Kagua pochi", walletTag:"Solana · Utafutaji wa on-chain",
+          walletIntro:"Bandika anwani yoyote ya pochi ya Solana kusoma nafasi yake ya rkuSOL moja kwa moja kutoka kwenye chain: jumla ya tokeni zinazoshikiliwa, SOL ngapi tokeni hizo zinawakilisha, na sehemu ya pochi hiyo katika ugavi wote. Salio huchukuliwa moja kwa moja kutoka Solana RPC ya umma unapokagua; thamani za tokeni hutumia kiwango na bei ya picha ya data ya ukurasa huu.",
+          walletLabel:"Anwani ya pochi ya Solana", walletPlaceholder:"Bandika anwani ya Solana…", checkBtn:"Kagua pochi", checking:"Inasoma chain…",
+          resRku:"rkuSOL iliyoshikiliwa", resSol:"Salio la SOL", resStake:"Thamani ya staking", resUsd:"Thamani", resShare:"Sehemu ya ugavi", resPoints:"Pointi za mholdi",
+          pointsNone:"Hakuna iliyochapishwa — Raiku haina programu rasmi ya pointi, kwa hivyo hakuna salio la pointi kwenye chain.",
+          invalidAddr:"Hiyo haionekani kama anwani sahihi ya Solana. Tafadhali ikague na ujaribu tena.",
+          lookupFail:"Utafutaji umeshindwa — Solana RPC ya umma haikujibu. Tafadhali jaribu tena baada ya muda mfupi.",
+          checkedAt:"Imekaguliwa", viewExplorer:"Tazama kwenye Solscan" },
+        ha: { walletTitle:"Duba wallet", walletTag:"Solana · Bincike a kan chain",
+          walletIntro:"Manna kowace adireshin wallet na Solana don karanta matsayinsa na rkuSOL kai tsaye daga chain: jimillar token da yake riƙe, SOL nawa waɗannan token ke wakilta, da kasonsa a duk wadata. Ana ɗauko ma'auni kai tsaye daga Solana RPC na jama'a lokacin da ka duba; darajar token na amfani da farashin musaya da farashin hoton bayanai na wannan shafi.",
+          walletLabel:"Adireshin wallet na Solana", walletPlaceholder:"Manna adireshin Solana…", checkBtn:"Duba wallet", checking:"Ana karanta chain…",
+          resRku:"rkuSOL da aka riƙe", resSol:"Ma'aunin SOL", resStake:"Darajar staking", resUsd:"Daraja", resShare:"Kason wadata", resPoints:"Maki na mai riƙewa",
+          pointsNone:"Babu wanda aka wallafa — Raiku ba ta da shirin maki na hukuma, don haka babu ma'aunin maki a kan chain.",
+          invalidAddr:"Wannan ba ya kama adireshin Solana mai inganci. Don Allah a duba a sake gwadawa.",
+          lookupFail:"Binciken ya gaza — Solana RPC na jama'a bai amsa ba. Don Allah a sake gwadawa bayan ɗan lokaci.",
+          checkedAt:"An duba", viewExplorer:"Duba a Solscan" },
+        yo: { walletTitle:"Ṣàyẹ̀wò wallet", walletTag:"Solana · Ìwádìí on-chain",
+          walletIntro:"Lẹ̀ẹ́ adirẹsi wallet Solana èyíkéyìí síbí láti ka ipò rkuSOL rẹ̀ taara láti chain: àpapọ̀ token tí ó dì mú, SOL mélòó ni àwọn token náà dúró fún, àti ìpín wallet náà nínú gbogbo ìpèsè. A ń mú àwọn ìwọ̀n wá láàyè láti Solana RPC gbogbo ènìyàn nígbà tí o bá ṣàyẹ̀wò; iye token ń lo ìwọ̀n pàṣípààrọ̀ àti iye àwòrán dátà ojúewé yìí.",
+          walletLabel:"Adirẹsi wallet Solana", walletPlaceholder:"Lẹ̀ẹ́ adirẹsi Solana…", checkBtn:"Ṣàyẹ̀wò wallet", checking:"Ń ka chain…",
+          resRku:"rkuSOL tí a dì mú", resSol:"Ìwọ̀n SOL", resStake:"Iye staking", resUsd:"Iye", resShare:"Ìpín ìpèsè", resPoints:"Àwọn àmì olùní",
+          pointsNone:"Kò sí èyí tí a tẹ̀ jáde — Raiku kò ní ètò àmì tìjọba, nítorí náà kò sí ìwọ̀n àmì lórí chain.",
+          invalidAddr:"Èyí kò dà bí adirẹsi Solana tí ó tọ́. Jọ̀wọ́ ṣàyẹ̀wò rẹ̀ kí o sì gbìyànjú lẹ́ẹ̀kan sí i.",
+          lookupFail:"Ìwádìí náà kùnà — Solana RPC gbogbo ènìyàn kò dáhùn. Jọ̀wọ́ gbìyànjú lẹ́ẹ̀kan sí i ní ìṣẹ́jú díẹ̀.",
+          checkedAt:"A ṣàyẹ̀wò", viewExplorer:"Wo ó lórí Solscan" },
+        am: { walletTitle:"ዋሌት ይፈትሹ", walletTag:"Solana · On-chain ፍለጋ",
+          walletIntro:"የrkuSOL አቋሙን በቀጥታ ከchain ለማንበብ ማንኛውንም የSolana ዋሌት አድራሻ ይለጥፉ፦ ጠቅላላ የተያዙ ቶከኖች፣ እነዚያ ቶከኖች ስንት SOL እንደሚወክሉ እና የዋሌቱ ድርሻ ከጠቅላላ አቅርቦት። ሚዛኖች ስትፈትሹ ከሕዝብ Solana RPC በቀጥታ ይመጣሉ፤ የቶከን እሴቶች የዚህ ገጽ ቅጽበታዊ መረጃ ተመን እና ዋጋ ይጠቀማሉ።",
+          walletLabel:"የSolana ዋሌት አድራሻ", walletPlaceholder:"የSolana አድራሻ ይለጥፉ…", checkBtn:"ዋሌት ይፈትሹ", checking:"Chain እየተነበበ ነው…",
+          resRku:"የተያዘ rkuSOL", resSol:"የSOL ሚዛን", resStake:"የStaking እሴት", resUsd:"እሴት", resShare:"የአቅርቦት ድርሻ", resPoints:"የያዢ ነጥቦች",
+          pointsNone:"የታተመ የለም — Raiku ኦፊሴላዊ የነጥብ ፕሮግራም የለውም፣ ስለዚህ በchain ላይ የነጥብ ሚዛን የለም።",
+          invalidAddr:"ይህ ትክክለኛ የSolana አድራሻ አይመስልም። እባክዎ ይፈትሹ እና እንደገና ይሞክሩ።",
+          lookupFail:"ፍለጋው አልተሳካም — የሕዝብ Solana RPC አልመለሰም። እባክዎ ከጥቂት ጊዜ በኋላ እንደገና ይሞክሩ።",
+          checkedAt:"ተፈትሿል", viewExplorer:"በSolscan ይመልከቱ" },
+        zu: { walletTitle:"Hlola i-wallet", walletTag:"Solana · Ukusesha okuku-chain",
+          walletIntro:"Namathisela noma yiliphi ikheli le-wallet ye-Solana ukuze ufunde isikhundla sayo se-rkuSOL ngqo ku-chain: isamba samathokheni aphethwe, ukuthi lawo mathokheni amele i-SOL engakanani, nesabelo se-wallet ekunikezweni okuphelele. Amabhalansi alethwa bukhoma ku-Solana RPC yomphakathi ngesikhathi uhlola; amanani amathokheni asebenzisa isilinganiso nentengo yesithombe sedatha saleli khasi.",
+          walletLabel:"Ikheli le-wallet ye-Solana", walletPlaceholder:"Namathisela ikheli le-Solana…", checkBtn:"Hlola i-wallet", checking:"Ifunda i-chain…",
+          resRku:"I-rkuSOL ephethwe", resSol:"Ibhalansi ye-SOL", resStake:"Inani le-staking", resUsd:"Inani", resShare:"Isabelo sokunikezwa", resPoints:"Amaphuzu omnikazi",
+          pointsNone:"Akukho okushicilelwe — i-Raiku ayinalo uhlelo lwamaphuzu olusemthethweni, ngakho alikho ibhalansi lamaphuzu ku-chain.",
+          invalidAddr:"Lokho akubukeki njengekheli le-Solana elivumelekile. Sicela ulihlole bese uzama futhi.",
+          lookupFail:"Ukusesha kuhlulekile — i-Solana RPC yomphakathi ayiphendulanga. Sicela uzame futhi emzuzwini.",
+          checkedAt:"Kuhlolelwe", viewExplorer:"Buka ku-Solscan" }
+      };
+      /* ——— Holder Card strings ——— */
+      var CARD_I18N = {
+        en: { sub:"rkuSOL Holder Card", rank:"leaderboard rank", bal:"RKUSOL BALANCE", days:"DAYS HELD", score:"SCORE",
+          note:"Score = on-chain balance-days. Days Held starts at first detected rkuSOL acquisition.",
+          dl:"Download card (PNG)", solscan:"View on Solscan", none:"No rkuSOL yet",
+          hist:"Reconstructing holding history from past transactions…", rankp:"Ranking this wallet against all holders…",
+          rankNote:"Rank is by current rkuSOL balance across every holder, read live from the chain.",
+          comm:"Community holder card, computed locally in your browser — not an official Raiku points programme. The address is sent only to the public Solana RPC endpoints this page connects to; nothing is stored.",
+          partial:"This wallet has a long transaction history, so its score could not be fully reconstructed in the browser. Days held is exact; the score is left blank rather than guessed." },
+        id: { sub:"rkuSOL Holder Card", rank:"peringkat leaderboard", bal:"SALDO RKUSOL", days:"HARI DIPEGANG", score:"SKOR",
+          note:"Skor = saldo-harian on-chain. Hari Dipegang dimulai dari akuisisi rkuSOL pertama yang terdeteksi.",
+          dl:"Unduh kartu (PNG)", solscan:"Lihat di Solscan", none:"Belum ada rkuSOL",
+          hist:"Menyusun ulang riwayat kepemilikan dari transaksi lampau…", rankp:"Mengurutkan dompet ini di antara semua holder…",
+          rankNote:"Peringkat berdasarkan saldo rkuSOL saat ini di antara semua holder, dibaca live dari chain.",
+          comm:"Kartu holder komunitas, dihitung lokal di browsermu — bukan program poin resmi Raiku. Alamat hanya dikirim ke endpoint RPC publik Solana yang dihubungi halaman ini; tidak ada yang disimpan.",
+          partial:"Dompet ini punya riwayat transaksi yang panjang, jadi skornya tidak bisa disusun ulang sepenuhnya di browser. Hari dipegang tetap tepat; skor dikosongkan daripada ditebak." },
+        hi: { sub:"rkuSOL Holder Card", rank:"लीडरबोर्ड रैंक", bal:"RKUSOL बैलेंस", days:"रखे गए दिन", score:"स्कोर",
+          note:"स्कोर = ऑन-चेन बैलेंस-दिन। रखे गए दिन पहले पाए गए rkuSOL अधिग्रहण से शुरू होते हैं।",
+          dl:"कार्ड डाउनलोड करें (PNG)", solscan:"Solscan पर देखें", none:"अभी rkuSOL नहीं है",
+          hist:"पिछले लेनदेन से होल्डिंग इतिहास बनाया जा रहा है…", rankp:"सभी होल्डर्स के बीच इस वॉलेट की रैंकिंग हो रही है…",
+          rankNote:"रैंक हर होल्डर के वर्तमान rkuSOL बैलेंस के आधार पर है, चेन से लाइव पढ़ा गया।",
+          comm:"सामुदायिक होल्डर कार्ड, आपके ब्राउज़र में स्थानीय रूप से गणना किया गया — Raiku का आधिकारिक पॉइंट्स कार्यक्रम नहीं। पता केवल उन सार्वजनिक Solana RPC एंडपॉइंट्स को भेजा जाता है जिनसे यह पेज जुड़ता है; कुछ भी संग्रहीत नहीं होता।",
+          partial:"इस वॉलेट का लेनदेन इतिहास लंबा है, इसलिए इसका स्कोर ब्राउज़र में पूरी तरह नहीं बनाया जा सका। रखे गए दिन सटीक हैं; स्कोर अनुमान लगाने के बजाय खाली छोड़ा गया है।" },
+        zh: { sub:"rkuSOL Holder Card", rank:"排行榜排名", bal:"RKUSOL 余额", days:"持有天数", score:"分数",
+          note:"分数 = 链上余额天数。持有天数从首次检测到的 rkuSOL 获取开始计算。",
+          dl:"下载卡片 (PNG)", solscan:"在 Solscan 查看", none:"尚未持有 rkuSOL",
+          hist:"正在从历史交易重建持有记录…", rankp:"正在与所有持有人进行排名…",
+          rankNote:"排名依据所有持有人的当前 rkuSOL 余额，从链上实时读取。",
+          comm:"社区持有人卡片，在您的浏览器中本地计算——并非 Raiku 官方积分计划。地址仅发送到本页连接的公共 Solana RPC 端点；不会存储任何内容。",
+          partial:"该钱包交易历史较长，无法在浏览器中完整重建其分数。持有天数是准确的；分数留空而不做猜测。" },
+        th: { sub:"rkuSOL Holder Card", rank:"อันดับลีดเดอร์บอร์ด", bal:"ยอดคงเหลือ RKUSOL", days:"วันที่ถือครอง", score:"คะแนน",
+          note:"คะแนน = ยอดคงเหลือ-วันบนเชน วันที่ถือครองเริ่มจากวันที่ตรวจพบการได้รับ rkuSOL ครั้งแรก",
+          dl:"ดาวน์โหลดการ์ด (PNG)", solscan:"ดูบน Solscan", none:"ยังไม่มี rkuSOL",
+          hist:"กำลังสร้างประวัติการถือครองจากธุรกรรมที่ผ่านมา…", rankp:"กำลังจัดอันดับวอลเล็ตนี้เทียบกับผู้ถือทั้งหมด…",
+          rankNote:"อันดับคิดจากยอดคงเหลือ rkuSOL ปัจจุบันของผู้ถือทุกคน อ่านสดจากเชน",
+          comm:"การ์ดผู้ถือของชุมชน คำนวณภายในเบราว์เซอร์ของคุณ — ไม่ใช่โปรแกรมคะแนนอย่างเป็นทางการของ Raiku ที่อยู่จะถูกส่งไปยังปลายทาง Solana RPC สาธารณะที่หน้านี้เชื่อมต่อเท่านั้น ไม่มีการจัดเก็บใด ๆ",
+          partial:"วอลเล็ตนี้มีประวัติธุรกรรมยาว จึงไม่สามารถสร้างคะแนนใหม่ทั้งหมดในเบราว์เซอร์ได้ วันที่ถือครองถูกต้อง ส่วนคะแนนเว้นว่างไว้แทนการเดา" },
+        vi: { sub:"rkuSOL Holder Card", rank:"hạng bảng xếp hạng", bal:"SỐ DƯ RKUSOL", days:"SỐ NGÀY NẮM GIỮ", score:"ĐIỂM",
+          note:"Điểm = số dư-ngày on-chain. Số ngày nắm giữ bắt đầu từ lần nhận rkuSOL đầu tiên được phát hiện.",
+          dl:"Tải thẻ (PNG)", solscan:"Xem trên Solscan", none:"Chưa có rkuSOL",
+          hist:"Đang dựng lại lịch sử nắm giữ từ các giao dịch trước…", rankp:"Đang xếp hạng ví này so với mọi holder…",
+          rankNote:"Hạng dựa trên số dư rkuSOL hiện tại của mọi holder, đọc trực tiếp từ chain.",
+          comm:"Thẻ holder cộng đồng, được tính ngay trong trình duyệt của bạn — không phải chương trình điểm chính thức của Raiku. Địa chỉ chỉ được gửi tới các endpoint Solana RPC công khai mà trang này kết nối; không có gì được lưu trữ.",
+          partial:"Ví này có lịch sử giao dịch dài nên không thể dựng lại toàn bộ điểm trong trình duyệt. Số ngày nắm giữ là chính xác; điểm được để trống thay vì đoán." },
+        ru: { sub:"rkuSOL Holder Card", rank:"место в лидерборде", bal:"БАЛАНС RKUSOL", days:"ДНЕЙ УДЕРЖАНИЯ", score:"СЧЁТ",
+          note:"Счёт = баланс-дни в блокчейне. Дни удержания отсчитываются с первого обнаруженного приобретения rkuSOL.",
+          dl:"Скачать карточку (PNG)", solscan:"Смотреть на Solscan", none:"rkuSOL пока нет",
+          hist:"Восстанавливаем историю удержания из прошлых транзакций…", rankp:"Сравниваем этот кошелёк со всеми держателями…",
+          rankNote:"Место определяется текущим балансом rkuSOL среди всех держателей, читается вживую из блокчейна.",
+          comm:"Карточка держателя сообщества, вычисляется локально в вашем браузере — это не официальная программа баллов Raiku. Адрес отправляется только публичным эндпоинтам Solana RPC, к которым подключается эта страница; ничего не сохраняется.",
+          partial:"У этого кошелька длинная история транзакций, поэтому счёт не удалось полностью восстановить в браузере. Дни удержания точны; счёт оставлен пустым, а не угадан." },
+        sw: { sub:"rkuSOL Holder Card", rank:"nafasi kwenye leaderboard", bal:"SALIO LA RKUSOL", days:"SIKU ZILIZOSHKILIWA", score:"ALAMA",
+          note:"Alama = salio-siku za on-chain. Siku Zilizoshikiliwa huanza tangu upataji wa kwanza wa rkuSOL uliogunduliwa.",
+          dl:"Pakua kadi (PNG)", solscan:"Tazama kwenye Solscan", none:"Hakuna rkuSOL bado",
+          hist:"Inajenga upya historia ya kushikilia kutoka miamala iliyopita…", rankp:"Inapanga pochi hii dhidi ya waholdi wote…",
+          rankNote:"Nafasi ni kwa salio la sasa la rkuSOL miongoni mwa waholdi wote, linasomwa moja kwa moja kutoka kwenye chain.",
+          comm:"Kadi ya mholdi wa jamii, imekokotolewa ndani ya kivinjari chako — si programu rasmi ya pointi ya Raiku. Anwani hutumwa tu kwa ncha za umma za Solana RPC ambazo ukurasa huu huunganisha; hakuna kinachohifadhiwa.",
+          partial:"Pochi hii ina historia ndefu ya miamala, kwa hivyo alama yake haikuweza kujengwa upya kikamilifu kwenye kivinjari. Siku zilizoshikiliwa ni sahihi; alama imeachwa wazi badala ya kukisiwa." },
+        ha: { sub:"rkuSOL Holder Card", rank:"matsayi a leaderboard", bal:"MA'AUNIN RKUSOL", days:"KWANAKIN RIƘEWA", score:"MAKI",
+          note:"Maki = ma'auni-kwanaki a kan chain. Kwanakin Riƙewa suna farawa daga samun rkuSOL na farko da aka gano.",
+          dl:"Sauke kati (PNG)", solscan:"Duba a Solscan", none:"Babu rkuSOL tukuna",
+          hist:"Ana sake gina tarihin riƙewa daga ma'amaloli da suka gabata…", rankp:"Ana jera wannan wallet a cikin duk masu riƙewa…",
+          rankNote:"Matsayi yana bisa ma'aunin rkuSOL na yanzu a cikin duk masu riƙewa, ana karanta shi kai tsaye daga chain.",
+          comm:"Katin mai riƙewa na al'umma, ana lissafa shi a cikin browser ɗinka — ba shirin maki na hukuma na Raiku ba ne. Ana aika adireshin ne kawai zuwa Solana RPC na jama'a da wannan shafi ke haɗawa; ba a adana komai.",
+          partial:"Wannan wallet yana da dogon tarihin ma'amaloli, don haka ba a iya sake gina makinsa gaba ɗaya a browser ba. Kwanakin riƙewa daidai suke; an bar maki a buɗe maimakon a yi hasashe." },
+        yo: { sub:"rkuSOL Holder Card", rank:"ipò leaderboard", bal:"ÌWỌ̀N RKUSOL", days:"ỌJỌ́ TÍ A DÌ MÚ", score:"ÀMÌ",
+          note:"Àmì = ìwọ̀n-ọjọ́ on-chain. Ọjọ́ tí a dì mú bẹ̀rẹ̀ láti ìgbà àkọ́kọ́ tí a rí ìgbà rkuSOL.",
+          dl:"Ṣe ìgbàsílẹ̀ káàdì (PNG)", solscan:"Wo ó lórí Solscan", none:"Kò sí rkuSOL síbẹ̀",
+          hist:"Ń tún ìtàn dídìmú ṣe láti àwọn ìṣòwò tí ó kọjá…", rankp:"Ń ṣe ipò wallet yìí láàárín gbogbo àwọn olùní…",
+          rankNote:"Ipò wà nípa ìwọ̀n rkuSOL ìsinsin ti gbogbo àwọn olùní, a kà á láàyè láti chain.",
+          comm:"Káàdì olùní àwùjọ, a ṣírò rẹ̀ nínú browser rẹ — kì í ṣe ètò àmì tìjọba ti Raiku. A ń rán adirẹsi náà lọ sí àwọn endpoint Solana RPC gbogbo ènìyàn tí ojúewé yìí sopọ̀ mọ́ nìkan; a kò fi nǹkan pamọ́.",
+          partial:"Wallet yìí ní ìtàn ìṣòwò gígùn, nítorí náà a kò lè tún àmì rẹ̀ ṣe ní kíkún nínú browser. Ọjọ́ tí a dì mú tọ́; a fi àmì sílẹ̀ ní òfo dípò kí a máa ṣe àròyé." },
+        am: { sub:"rkuSOL Holder Card", rank:"የመሪዎች ሰንጠረዥ ደረጃ", bal:"RKUSOL ሚዛን", days:"የተያዙ ቀናት", score:"ነጥብ",
+          note:"ነጥብ = on-chain የሚዛን-ቀናት። የተያዙ ቀናት ከመጀመሪያው ከተገኘው የrkuSOL ግዢ ጀምሮ ይቆጠራል።",
+          dl:"ካርድ አውርድ (PNG)", solscan:"በSolscan ይመልከቱ", none:"ገና rkuSOL የለም",
+          hist:"የይዞታ ታሪክን ካለፉ ግብይቶች እንደገና በመገንባት ላይ…", rankp:"ይህንን ዋሌት ከሁሉም ያዢዎች ጋር በማወዳደር ላይ…",
+          rankNote:"ደረጃው በሁሉም ያዢዎች የአሁኑ የrkuSOL ሚዛን መሰረት ነው፣ ከchain በቀጥታ ይነበባል።",
+          comm:"የማህበረሰብ ያዢ ካርድ፣ በአሳሽዎ ውስጥ በአካባቢው ይሰላል — የRaiku ኦፊሴላዊ የነጥብ ፕሮግራም አይደለም። አድራሻው የሚላከው ይህ ገጽ ወደሚያገናኛቸው የሕዝብ Solana RPC መድረሻዎች ብቻ ነው፤ ምንም አይቀመጥም።",
+          partial:"ይህ ዋሌት ረጅም የግብይት ታሪክ ስላለው ነጥቡ በአሳሹ ውስጥ ሙሉ ለሙሉ ሊገነባ አልቻለም። የተያዙ ቀናት ትክክል ናቸው፤ ነጥቡ ከመገመት ይልቅ ባዶ ተተውቷል።" },
+        zu: { sub:"rkuSOL Holder Card", rank:"izinga lebhodi labaholi", bal:"IBHALANSI YE-RKUSOL", days:"IZINSUKU EZIBANJIWE", score:"AMAPHUZU",
+          note:"Amaphuzu = ibhalansi-izinsuku eziku-chain. Izinsuku Ezibanjiwe ziqala ekutholweni kokuqala kwe-rkuSOL okutholiwe.",
+          dl:"Landa ikhadi (PNG)", solscan:"Buka ku-Solscan", none:"Ayikho i-rkuSOL okwamanje",
+          hist:"Yakha kabusha umlando wokubamba kusuka kokwenziwe okudlule…", rankp:"Ibekela le wallet uma iqhathaniswa nabo bonke abanikazi…",
+          rankNote:"Izinga lixhomeke kubhalansi yamanje ye-rkuSOL yabo bonke abanikazi, ifundwa bukhoma ku-chain.",
+          comm:"Ikhadi lomnikazi womphakathi, libalwa endaweni kusiphequluli sakho — akulona uhlelo lwamaphuzu olusemthethweni lwe-Raiku. Ikheli lithunyelwa kuphela kuziphetho ze-Solana RPC zomphakathi leli khasi elixhuma kuzo; akukho okugcinwayo.",
+          partial:"Le wallet inomlando omude wokwenziwe, ngakho amaphuzu ayo awakwazanga ukwakhiwa kabusha ngokugcwele kusiphequluli. Izinsuku ezibanjiwe zinembile; amaphuzu ashiywe engenalutho kunokuba aqagelwe." }
+      };
+
+      var lastWallet = null;
+      var inFlight = false;
+
+      function wdict() { return WI18N[curLang] || WI18N.en; }
+      function cdict() { return CARD_I18N[curLang] || CARD_I18N.en; }
+
+      function applyWalletLang() {
+        var w = wdict();
+        var els = document.querySelectorAll("[data-wi18n]");
+        for (var i = 0; i < els.length; i++) {
+          var k = els[i].getAttribute("data-wi18n");
+          if (w[k]) els[i].textContent = w[k];
+        }
+        document.getElementById("wAddr").setAttribute("placeholder", w.walletPlaceholder);
+        var c = cdict();
+        document.getElementById("hcSub").textContent = c.sub;
+        document.getElementById("hcRankLab").textContent = c.rank;
+        document.getElementById("hcBalLab").textContent = c.bal;
+        document.getElementById("hcDaysLab").textContent = c.days;
+        document.getElementById("hcScoreLab").textContent = c.score;
+        document.getElementById("hcScoreNote").textContent = c.note;
+        document.getElementById("hcDownload").textContent = c.dl;
+        document.getElementById("hcSolscan").textContent = c.solscan;
+        if (lastWallet) { renderWalletResult(); renderCard(); }
+      }
+
+      /* ——— Strict address validation ———
+         A Solana address is base58 and must decode to exactly 32 bytes.
+         Anything else is rejected before any network call is made. */
+      var B58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+      function b58decode(str) {
+        var bytes = [0];
+        for (var i = 0; i < str.length; i++) {
+          var idx = B58.indexOf(str[i]);
+          if (idx < 0) return null;
+          var carry = idx;
+          for (var j = 0; j < bytes.length; j++) {
+            carry += bytes[j] * 58;
+            bytes[j] = carry & 255;
+            carry >>= 8;
+          }
+          while (carry > 0) { bytes.push(carry & 255); carry >>= 8; }
+        }
+        for (var k = 0; k < str.length && str[k] === "1"; k++) bytes.push(0);
+        return bytes.reverse();
+      }
+      function isValidSolanaAddress(a) {
+        if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a)) return false;
+        var d = b58decode(a);
+        return !!d && d.length === 32;
+      }
+      function shortAddr(a) { return a.slice(0, 4) + "…" + a.slice(-4); }
+
+      /* ——— RPC access ———
+         Fixed allowlist of public HTTPS endpoints, fixed JSON-RPC method
+         names, a hard timeout on every call, and shape-checked results.
+         Error details from servers are never shown to the visitor. */
+      function rpcCall(method, params, timeoutMs) {
+        var body = JSON.stringify({ jsonrpc: "2.0", id: 1, method: method, params: params });
+        var limit = timeoutMs || 15000;
+        var chain = Promise.reject(new Error("start"));
+        RPC_ENDPOINTS.forEach(function (url) {
+          chain = chain.catch(function () {
+            var ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+            var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, limit) : null;
+            return fetch(url, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: body,
+              signal: ctrl ? ctrl.signal : undefined
+            }).then(function (r) {
+              if (timer) clearTimeout(timer);
+              if (!r.ok) throw new Error("http");
+              return r.json();
+            }).then(function (j) {
+              if (!j || j.error || typeof j.result === "undefined") throw new Error("rpc");
+              return j.result;
+            }).catch(function (e) {
+              if (timer) clearTimeout(timer);
+              throw e;
+            });
+          });
+        });
+        return chain;
+      }
+
+      function tokenUiAmount(ta) {
+        if (!ta) return 0;
+        if (typeof ta.uiAmount === "number") return ta.uiAmount;
+        var raw = parseFloat(ta.amount || "0");
+        var dec = typeof ta.decimals === "number" ? ta.decimals : 9;
+        return isNaN(raw) ? 0 : raw / Math.pow(10, dec);
+      }
+
+      /* Holding history: signatures for the wallet's rkuSOL token
+         accounts, oldest first, then each transaction's post-balances.
+         Score integrates balance over time (balance-days). Fetching is
+         capped; beyond the cap the score is reported as unavailable
+         instead of being approximated silently. */
+      var MAX_HISTORY_TX = 200;
+      function fetchSignatures(acct) {
+        var all = [];
+        function page(before) {
+          var opts = { limit: 1000 };
+          if (before) opts.before = before;
+          return rpcCall("getSignaturesForAddress", [acct, opts]).then(function (res) {
+            var arr = Array.isArray(res) ? res : [];
+            for (var i = 0; i < arr.length; i++) all.push(arr[i]);
+            if (arr.length === 1000 && all.length < 3000) {
+              return page(arr[arr.length - 1].signature);
+            }
+            return all;
+          });
+        }
+        return page(null);
+      }
+      function txTotalBalance(tx, owner) {
+        try {
+          var post = (tx.meta && tx.meta.postTokenBalances) || [];
+          var sum = 0, found = false;
+          for (var i = 0; i < post.length; i++) {
+            if (post[i].mint === RKU_MINT && post[i].owner === owner) {
+              sum += tokenUiAmount(post[i].uiTokenAmount);
+              found = true;
+            }
+          }
+          return found ? sum : null;
+        } catch (e) { return null; }
+      }
+      function computeHistory(owner, acctPubkeys) {
+        var jobs = acctPubkeys.map(function (pk) {
+          return fetchSignatures(pk).catch(function () { return []; });
+        });
+        return Promise.all(jobs).then(function (lists) {
+          var bySig = {};
+          lists.forEach(function (list) {
+            list.forEach(function (sg) {
+              if (sg && sg.signature && typeof sg.blockTime === "number" && !sg.err) {
+                bySig[sg.signature] = sg.blockTime;
+              }
+            });
+          });
+          var sigs = Object.keys(bySig).map(function (sg) {
+            return { signature: sg, t: bySig[sg] * 1000 };
+          }).sort(function (a, b) { return a.t - b.t; });
+          if (!sigs.length) return { days: 0, score: 0, capped: false };
+          var now = Date.now();
+          var days = Math.max(0, Math.floor((now - sigs[0].t) / 86400000));
+          if (sigs.length > MAX_HISTORY_TX) return { days: days, score: null, capped: true };
+          var balances = new Array(sigs.length);
+          var idx = 0;
+          function batch() {
+            if (idx >= sigs.length) return Promise.resolve();
+            var slice = sigs.slice(idx, idx + 5);
+            idx += slice.length;
+            return Promise.all(slice.map(function (sg) {
+              return rpcCall("getTransaction", [sg.signature, { encoding: "jsonParsed", maxSupportedTransactionVersion: 0 }])
+                .catch(function () { return null; });
+            })).then(function (txs) {
+              txs.forEach(function (tx, j) {
+                balances[sigs.indexOf(slice[j])] = tx ? txTotalBalance(tx, owner) : null;
+              });
+              return batch();
+            });
+          }
+          return batch().then(function () {
+            var score = 0, prev = 0;
+            for (var i = 0; i < sigs.length; i++) {
+              if (typeof balances[i] === "number") prev = balances[i];
+              var nextT = i + 1 < sigs.length ? sigs[i + 1].t : now;
+              score += prev * Math.max(0, (nextT - sigs[i].t) / 86400000);
+            }
+            return { days: days, score: score, capped: false };
+          });
+        });
+      }
+
+      /* Leaderboard rank: one getProgramAccounts read of every rkuSOL
+         token account, aggregated per owner, ranked by balance.
+         Falls back to the 20 largest accounts when the full read is
+         refused; outside the top 20 the rank is shown as unknown. */
+      var TOKEN_PROGRAM = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+      function computeRank(owner, myBal) {
+        if (!(myBal > 0)) return Promise.resolve(null);
+        return rpcCall("getProgramAccounts", [TOKEN_PROGRAM, {
+          encoding: "jsonParsed",
+          filters: [{ dataSize: 165 }, { memcmp: { offset: 0, bytes: RKU_MINT } }]
+        }], 30000).then(function (res) {
+          if (!Array.isArray(res)) throw new Error("shape");
+          var perOwner = {};
+          res.forEach(function (item) {
+            try {
+              var info = item.account.data.parsed.info;
+              var o = info.owner;
+              if (typeof o !== "string") return;
+              perOwner[o] = (perOwner[o] || 0) + tokenUiAmount(info.tokenAmount);
+            } catch (e) { /* skip unparsable account */ }
+          });
+          var owners = Object.keys(perOwner);
+          if (!owners.length) throw new Error("empty");
+          var above = 0;
+          owners.forEach(function (o) { if (perOwner[o] > myBal + 1e-9) above++; });
+          return { rank: above + 1, total: owners.length };
+        }).catch(function () {
+          return rpcCall("getTokenLargestAccounts", [RKU_MINT]).then(function (res) {
+            var vals = (res && res.value) || [];
+            var above = 0;
+            vals.forEach(function (v) { if ((v.uiAmount || 0) > myBal + 1e-9) above++; });
+            if (above < vals.length) return { rank: above + 1, total: null };
+            return null;
+          }).catch(function () { return null; });
+        });
+      }
+
+      function tierFor(bal) {
+        if (bal >= 500) return "Diamond";
+        if (bal >= 100) return "Platinum";
+        if (bal >= 25) return "Gold";
+        if (bal >= 5) return "Silver";
+        if (bal >= 0.5) return "Bronze";
+        if (bal > 0) return "Holder";
+        return null;
+      }
+
+      /* Generated identicon avatar: drawn locally from the address
+         itself — no external image is ever requested for a wallet. */
+      function hashStr(str) {
+        var h = 2166136261;
+        for (var i = 0; i < str.length; i++) {
+          h ^= str.charCodeAt(i);
+          h = (h * 16777619) >>> 0;
+        }
+        return h;
+      }
+      function buildAvatar(addr) {
+        var box = document.getElementById("hcAvatar");
+        while (box.firstChild) box.removeChild(box.firstChild);
+        var NS = "http://www.w3.org/2000/svg";
+        var svg = document.createElementNS(NS, "svg");
+        svg.setAttribute("viewBox", "0 0 100 100");
+        var bg = document.createElementNS(NS, "rect");
+        bg.setAttribute("width", "100"); bg.setAttribute("height", "100");
+        bg.setAttribute("fill", "#9DBE6E");
+        svg.appendChild(bg);
+        var h = hashStr(addr);
+        var cols = ["#E8A33D", "#B4552D", "#5B7C3A", "#F2CC8F", "#31456B"];
+        var cell = 20;
+        for (var y = 0; y < 5; y++) {
+          for (var x = 0; x < 3; x++) {
+            h = (h * 1103515245 + 12345) >>> 0;
+            if ((h >> 16) % 2 === 0) continue;
+            var col = cols[(h >> 8) % cols.length];
+            [x, 4 - x].forEach(function (xx) {
+              var r = document.createElementNS(NS, "rect");
+              r.setAttribute("x", String(xx * cell));
+              r.setAttribute("y", String(y * cell));
+              r.setAttribute("width", String(cell));
+              r.setAttribute("height", String(cell));
+              r.setAttribute("fill", col);
+              svg.appendChild(r);
+            });
+          }
+        }
+        box.appendChild(svg);
+      }
+
+      function renderCard() {
+        if (!lastWallet) return;
+        var c = cdict();
+        var lw = lastWallet;
+        document.getElementById("hcRank").textContent = lw.rank ? "#" + fmtInt(lw.rank) : "—";
+        document.getElementById("hcUser").textContent = shortAddr(lw.addr);
+        var tier = tierFor(lw.rku);
+        document.getElementById("hcTier").textContent = tier ? "rkuSOL " + tier : c.none;
+        document.getElementById("hcAddr").textContent = lw.addr;
+        document.getElementById("hcBal").textContent = nf({ minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(lw.rku);
+        document.getElementById("hcDays").textContent = fmtInt(lw.days || 0);
+        document.getElementById("hcScore").textContent = typeof lw.score === "number" ? fmtInt(Math.round(lw.score)) : "—";
+        buildAvatar(lw.addr);
+        var ex = document.getElementById("hcSolscan");
+        ex.href = "https://solscan.io/account/" + lw.addr;
+        ex.textContent = c.solscan;
+        var meta = document.getElementById("hcMeta");
+        var parts = [c.rankNote, c.comm];
+        if (lw.capped) parts.unshift(c.partial);
+        meta.textContent = parts.join(" ");
+        meta.hidden = false;
+        document.getElementById("hCard").hidden = false;
+      }
+
+      function renderWalletResult() {
+        if (!lastWallet) return;
+        var w = wdict();
+        var rate = SNAP.stakedSOL / SNAP.supply;
+        var price = SNAP.tvlUSD / SNAP.supply;
+        var stakeSOL = lastWallet.rku * rate;
+        document.getElementById("wRku").textContent = nf({ maximumFractionDigits: 4 }).format(lastWallet.rku);
+        document.getElementById("wSol").textContent = nf({ maximumFractionDigits: 4 }).format(lastWallet.sol);
+        document.getElementById("wStake").textContent = nf({ maximumFractionDigits: 4 }).format(stakeSOL) + " SOL";
+        document.getElementById("wUsd").textContent = "$" + nf({ minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(lastWallet.rku * price);
+        var share = SNAP.supply > 0 ? lastWallet.rku / SNAP.supply * 100 : 0;
+        document.getElementById("wShare").textContent = nf({ minimumFractionDigits: share > 0 && share < 0.01 ? 4 : 2, maximumFractionDigits: share > 0 && share < 0.01 ? 4 : 2 }).format(share) + "%";
+        document.getElementById("wResults").hidden = false;
+        document.getElementById("wMeta").hidden = false;
+        document.getElementById("wChecked").textContent = w.checkedAt + " · " + lastWallet.when.toLocaleString(LOCALES[curLang] || "en-US");
+        var ex = document.getElementById("wExplorer");
+        ex.href = "https://solscan.io/account/" + lastWallet.addr;
+        ex.textContent = w.viewExplorer;
+      }
+
+      /* Card download: the PNG is drawn on a local canvas from the
+         values already on screen — no image service is involved and
+         the filename is built from the shortened address only. */
+      document.getElementById("hcDownload").addEventListener("click", function () {
+        if (!lastWallet) return;
+        var lw = lastWallet;
+        var c = cdict();
+        var cv = document.createElement("canvas");
+        cv.width = 1240; cv.height = 800;
+        var g = cv.getContext("2d");
+        if (!g) return;
+        g.fillStyle = "#0B1322"; g.fillRect(0, 0, 1240, 800);
+        g.strokeStyle = "rgba(255,255,255,0.05)"; g.lineWidth = 1;
+        for (var gx = 0; gx <= 1240; gx += 44) { g.beginPath(); g.moveTo(gx, 0); g.lineTo(gx, 800); g.stroke(); }
+        for (var gy = 0; gy <= 800; gy += 44) { g.beginPath(); g.moveTo(0, gy); g.lineTo(1240, gy); g.stroke(); }
+        function rr(x, y, w, h, r) {
+          g.beginPath();
+          g.moveTo(x + r, y);
+          g.arcTo(x + w, y, x + w, y + h, r);
+          g.arcTo(x + w, y + h, x, y + h, r);
+          g.arcTo(x, y + h, x, y, r);
+          g.arcTo(x, y, x + w, y, r);
+          g.closePath();
+        }
+        rr(14, 14, 1212, 772, 30); g.strokeStyle = "#B7E34A"; g.lineWidth = 3; g.stroke();
+        g.fillStyle = "#FFFFFF";
+        g.beginPath(); g.arc(102, 96, 40, 0, Math.PI * 2); g.fill();
+        g.fillStyle = "#223D0E"; g.font = "800 44px system-ui, sans-serif";
+        g.textAlign = "center"; g.fillText("R", 102, 112);
+        g.textAlign = "left"; g.fillStyle = "#FFFFFF"; g.font = "700 40px system-ui, sans-serif";
+        g.fillText("Raiku", 166, 92);
+        g.fillStyle = "#B7E34A"; g.font = "600 26px system-ui, sans-serif";
+        g.fillText(c.sub, 166, 130);
+        g.textAlign = "right"; g.fillStyle = "#B7E34A"; g.font = "800 56px system-ui, monospace";
+        g.fillText(lw.rank ? "#" + lw.rank : "—", 1170, 100);
+        g.fillStyle = "#AEB9C6"; g.font = "400 20px system-ui, sans-serif";
+        g.fillText(c.rank, 1170, 134);
+        g.textAlign = "left";
+        var h = hashStr(lw.addr);
+        var cols = ["#E8A33D", "#B4552D", "#5B7C3A", "#F2CC8F", "#31456B"];
+        g.save();
+        g.beginPath(); g.arc(128, 268, 62, 0, Math.PI * 2); g.clip();
+        g.fillStyle = "#9DBE6E"; g.fillRect(66, 206, 124, 124);
+        var cell = 124 / 5;
+        for (var y = 0; y < 5; y++) {
+          for (var x = 0; x < 3; x++) {
+            h = (h * 1103515245 + 12345) >>> 0;
+            if ((h >> 16) % 2 === 0) continue;
+            g.fillStyle = cols[(h >> 8) % cols.length];
+            g.fillRect(66 + x * cell, 206 + y * cell, cell, cell);
+            g.fillRect(66 + (4 - x) * cell, 206 + y * cell, cell, cell);
+          }
+        }
+        g.restore();
+        g.fillStyle = "#FFFFFF"; g.font = "700 46px system-ui, sans-serif";
+        g.fillText(shortAddr(lw.addr), 226, 262);
+        var tier = tierFor(lw.rku);
+        g.fillStyle = "#C3CAD6"; g.font = "400 28px system-ui, sans-serif";
+        g.fillText(tier ? "rkuSOL " + tier : c.none, 226, 304);
+        rr(806, 196, 364, 150, 18); g.strokeStyle = "#B7E34A"; g.lineWidth = 2; g.stroke();
+        g.fillStyle = "#9FB0C3"; g.font = "400 19px system-ui, sans-serif";
+        g.fillText(c.bal, 832, 234);
+        g.fillStyle = "#B7E34A"; g.font = "800 50px system-ui, monospace";
+        g.fillText(nf({ minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(lw.rku), 832, 292);
+        g.fillStyle = "#E9EEF5"; g.font = "400 21px system-ui, sans-serif";
+        g.fillText("rkuSOL", 832, 326);
+        g.fillStyle = "#131E33";
+        rr(56, 400, 552, 130, 16); g.fill();
+        rr(632, 400, 538, 130, 16); g.fill();
+        g.fillStyle = "#8E9DB2"; g.font = "400 19px system-ui, sans-serif";
+        g.fillText(c.days, 82, 440);
+        g.fillText(c.score, 658, 440);
+        g.fillStyle = "#FFFFFF"; g.font = "800 46px system-ui, monospace";
+        g.fillText(fmtInt(lw.days || 0), 82, 498);
+        g.fillStyle = "#B7E34A";
+        g.fillText(typeof lw.score === "number" ? fmtInt(Math.round(lw.score)) : "—", 658, 498);
+        g.fillStyle = "#9FB0C3"; g.font = "400 20px system-ui, sans-serif";
+        var note = c.note;
+        if (note.length > 92) note = note.slice(0, 92) + "…";
+        g.fillText(note, 56, 590);
+        g.fillStyle = "#7E8FA6"; g.font = "400 18px ui-monospace, monospace";
+        g.fillText(lw.addr, 56, 640);
+        g.fillText("rkusolhodler", 56, 690);
+        var a = document.createElement("a");
+        a.download = "rkusol-holder-" + lw.addr.slice(0, 4) + lw.addr.slice(-4) + ".png";
+        a.href = cv.toDataURL("image/png");
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      });
+
+      document.getElementById("wform").addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        if (inFlight) return;
+        var w = wdict();
+        var c = cdict();
+        var status = document.getElementById("wStatus");
+        var addr = document.getElementById("wAddr").value.trim();
+        if (!isValidSolanaAddress(addr)) {
+          status.textContent = w.invalidAddr;
+          status.className = "wstatus err";
+          return;
+        }
+        inFlight = true;
+        var btn = document.getElementById("wBtn");
+        btn.disabled = true;
+        status.textContent = w.checking;
+        status.className = "wstatus";
+        var acctPubkeys = [];
+        var pTokens = rpcCall("getTokenAccountsByOwner", [addr, { mint: RKU_MINT }, { encoding: "jsonParsed" }])
+          .then(function (res) {
+            var total = 0;
+            var accts = (res && res.value) || [];
+            for (var i = 0; i < accts.length; i++) {
+              try {
+                if (typeof accts[i].pubkey === "string") acctPubkeys.push(accts[i].pubkey);
+                total += tokenUiAmount(accts[i].account.data.parsed.info.tokenAmount);
+              } catch (e) { /* skip unparsable account */ }
+            }
+            return total;
+          });
+        var pBal = rpcCall("getBalance", [addr]);
+        Promise.all([pTokens, pBal]).then(function (res) {
+          var rku = res[0];
+          var sol = res[1] && typeof res[1].value === "number" ? res[1].value / 1e9 : 0;
+          status.textContent = c.hist;
+          var pHist = rku > 0 || acctPubkeys.length
+            ? computeHistory(addr, acctPubkeys).catch(function () { return { days: 0, score: null, capped: true }; })
+            : Promise.resolve({ days: 0, score: 0, capped: false });
+          return pHist.then(function (hist) {
+            status.textContent = c.rankp;
+            return computeRank(addr, rku).then(function (rk) {
+              lastWallet = {
+                addr: addr, rku: rku, sol: sol, when: new Date(),
+                days: hist.days, score: hist.score, capped: hist.capped,
+                rank: rk ? rk.rank : null, rankTotal: rk ? rk.total : null
+              };
+              renderWalletResult();
+              renderCard();
+              status.textContent = hist.capped ? c.partial : "";
+              status.className = hist.capped ? "wstatus err" : "wstatus";
+            });
+          });
+        }).catch(function () {
+          status.textContent = w.lookupFail;
+          status.className = "wstatus err";
+        }).then(function () {
+          inFlight = false;
+          btn.disabled = false;
+        });
+      });
+
       applyLang("en");
-    </script>
     </script>
   </body>
 </html>
