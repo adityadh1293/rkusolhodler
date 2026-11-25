@@ -1858,12 +1858,9 @@
       }
 
       function tierFor(bal) {
-        if (bal >= 500) return "Diamond";
         if (bal >= 100) return "Platinum";
-        if (bal >= 25) return "Gold";
-        if (bal >= 5) return "Silver";
-        if (bal >= 0.5) return "Bronze";
-        if (bal > 0) return "Holder";
+        if (bal >= 10) return "Gold";
+        if (bal > 0) return "Hodler";
         return null;
       }
 
@@ -1879,22 +1876,21 @@
          tier, and the address hash flips it for half of wallets so
          two holders of the same tier do not always look identical. */
       var RYKU_POSES = {
-        Diamond: "ryku-royal.webp",
         Platinum: "ryku-royal.webp",
-        Gold: "ryku-gold.webp",
-        Silver: "ryku-silver.webp",
-        Bronze: "ryku-bronze.webp",
-        Holder: "ryku.webp"
+        Gold: "ryku-gold.webp"
       };
+      var RYKU_HODLER_POSES = ["ryku.webp", "ryku-bronze.webp", "ryku-silver.webp"];
       function buildAvatar(addr, tier) {
         var box = document.getElementById("hcAvatar");
         while (box.firstChild) box.removeChild(box.firstChild);
+        var h = hashStr(addr);
+        var src = RYKU_POSES[tier] || RYKU_HODLER_POSES[h % RYKU_HODLER_POSES.length];
         var img = document.createElement("img");
-        img.src = RYKU_POSES[tier] || "ryku.webp";
+        img.src = src;
         img.alt = "";
         img.width = 512; img.height = 512;
-        if (hashStr(addr) % 2 === 0) img.style.transform = "scaleX(-1)";
-        box.style.background = tier ? "" : "#9DBE6E";
+        if (h % 2 === 0) img.style.transform = "scaleX(-1)";
+        box.style.background = src === "ryku.webp" ? "#9DBE6E" : "";
         box.appendChild(img);
       }
 
