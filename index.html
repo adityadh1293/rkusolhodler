@@ -323,6 +323,7 @@
       .hc-avatar { width: 104px; height: 104px; border-radius: 6px; overflow: hidden; flex: none;
         border: 1px solid var(--ink-18); background: var(--paper); }
       .hc-avatar svg { width: 100%; height: 100%; display: block; }
+      .hc-avatar img { width: 100%; height: 100%; display: block; object-fit: cover; }
       .hc-id { flex: 1 1 190px; min-width: 180px; }
       .hc-user { font-size: clamp(23px, 4.6vw, 33px); font-weight: 700; color: var(--ink); line-height: 1.15; overflow-wrap: anywhere; }
       .hc-tier { display: inline-block; background: var(--ink); color: var(--paper); font-size: 13px; font-weight: 600;
@@ -1865,8 +1866,6 @@
         return null;
       }
 
-      /* Generated identicon avatar: drawn locally from the address
-         itself — no external image is ever requested for a wallet. */
       function hashStr(str) {
         var h = 2166136261;
         for (var i = 0; i < str.length; i++) {
@@ -1875,36 +1874,27 @@
         }
         return h;
       }
-      function buildAvatar(addr) {
+      /* Ryku holder portrait: the mascot pose follows the holder
+         tier, and the address hash flips it for half of wallets so
+         two holders of the same tier do not always look identical. */
+      var RYKU_POSES = {
+        Diamond: "ryku-royal.webp",
+        Platinum: "ryku-royal.webp",
+        Gold: "ryku-gold.webp",
+        Silver: "ryku-silver.webp",
+        Bronze: "ryku-bronze.webp",
+        Holder: "ryku.webp"
+      };
+      function buildAvatar(addr, tier) {
         var box = document.getElementById("hcAvatar");
         while (box.firstChild) box.removeChild(box.firstChild);
-        var NS = "http://www.w3.org/2000/svg";
-        var svg = document.createElementNS(NS, "svg");
-        svg.setAttribute("viewBox", "0 0 100 100");
-        var bg = document.createElementNS(NS, "rect");
-        bg.setAttribute("width", "100"); bg.setAttribute("height", "100");
-        bg.setAttribute("fill", "#9DBE6E");
-        svg.appendChild(bg);
-        var h = hashStr(addr);
-        var cols = ["#E8A33D", "#B4552D", "#5B7C3A", "#F2CC8F", "#31456B"];
-        var cell = 20;
-        for (var y = 0; y < 5; y++) {
-          for (var x = 0; x < 3; x++) {
-            h = (h * 1103515245 + 12345) >>> 0;
-            if ((h >> 16) % 2 === 0) continue;
-            var col = cols[(h >> 8) % cols.length];
-            [x, 4 - x].forEach(function (xx) {
-              var r = document.createElementNS(NS, "rect");
-              r.setAttribute("x", String(xx * cell));
-              r.setAttribute("y", String(y * cell));
-              r.setAttribute("width", String(cell));
-              r.setAttribute("height", String(cell));
-              r.setAttribute("fill", col);
-              svg.appendChild(r);
-            });
-          }
-        }
-        box.appendChild(svg);
+        var img = document.createElement("img");
+        img.src = RYKU_POSES[tier] || "ryku.webp";
+        img.alt = "";
+        img.width = 512; img.height = 512;
+        if (hashStr(addr) % 2 === 0) img.style.transform = "scaleX(-1)";
+        box.style.background = tier ? "" : "#9DBE6E";
+        box.appendChild(img);
       }
 
       function renderCard() {
@@ -1919,7 +1909,7 @@
         document.getElementById("hcBal").textContent = nf({ minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(lw.rku);
         document.getElementById("hcDays").textContent = fmtInt(lw.days || 0);
         document.getElementById("hcScore").textContent = typeof lw.score === "number" ? fmtInt(Math.round(lw.score)) : "—";
-        buildAvatar(lw.addr);
+        buildAvatar(lw.addr, tier);
         var ex = document.getElementById("hcSolscan");
         ex.href = "https://solscan.io/account/" + lw.addr;
         ex.textContent = c.solscan;
@@ -1998,19 +1988,32 @@
         g.strokeStyle = "rgba(34,61,14,0.18)"; g.lineWidth = 1;
         g.beginPath(); g.moveTo(56, 168); g.lineTo(1184, 168); g.stroke();
         g.textAlign = "left";
-        var h = hashStr(lw.addr);
-        var cols = ["#E8A33D", "#B4552D", "#5B7C3A", "#F2CC8F", "#31456B"];
+        var avImg = document.querySelector("#hcAvatar img");
         g.save();
         g.beginPath(); g.rect(66, 206, 124, 124); g.clip();
         g.fillStyle = "#9DBE6E"; g.fillRect(66, 206, 124, 124);
-        var cell = 124 / 5;
-        for (var y = 0; y < 5; y++) {
-          for (var x = 0; x < 3; x++) {
-            h = (h * 1103515245 + 12345) >>> 0;
-            if ((h >> 16) % 2 === 0) continue;
-            g.fillStyle = cols[(h >> 8) % cols.length];
-            g.fillRect(66 + x * cell, 206 + y * cell, cell, cell);
-            g.fillRect(66 + (4 - x) * cell, 206 + y * cell, cell, cell);
+        if (avImg && avImg.complete && avImg.naturalWidth > 0) {
+          var iw = avImg.naturalWidth, ih = avImg.naturalHeight;
+          var sc = Math.max(124 / iw, 124 / ih);
+          var dw = iw * sc, dh = ih * sc;
+          var dx = 66 + (124 - dw) / 2, dy = 206 + (124 - dh) / 2;
+          if (hashStr(lw.addr) % 2 === 0) {
+            g.translate(66 + 124, 0); g.scale(-1, 1);
+            dx = 124 - (dx - 66) - dw;
+          }
+          g.drawImage(avImg, dx, dy, dw, dh);
+        } else {
+          var h = hashStr(lw.addr);
+          var cols = ["#E8A33D", "#B4552D", "#5B7C3A", "#F2CC8F", "#31456B"];
+          var cell = 124 / 5;
+          for (var y = 0; y < 5; y++) {
+            for (var x = 0; x < 3; x++) {
+              h = (h * 1103515245 + 12345) >>> 0;
+              if ((h >> 16) % 2 === 0) continue;
+              g.fillStyle = cols[(h >> 8) % cols.length];
+              g.fillRect(66 + x * cell, 206 + y * cell, cell, cell);
+              g.fillRect(66 + (4 - x) * cell, 206 + y * cell, cell, cell);
+            }
           }
         }
         g.restore();
