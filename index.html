@@ -277,34 +277,12 @@
          inline SVG + CSS: no external assets, nothing fetched. */
       .mascot-stage { margin-top: 26px; text-align: center; }
       .mascot-stage[hidden] { display: none; }
-      .ryku-wrap { display: inline-block; animation: rykuBob 3s ease-in-out infinite; }
-      .ryku-wrap svg { width: min(190px, 52vw); height: auto; display: block; }
-      .ryku-shadow { width: 96px; height: 12px; margin: 2px auto 0; border-radius: 50%;
-        background: var(--ink-18); animation: shadowPulse 3s ease-in-out infinite; }
+      .ryku-wrap { display: inline-block; position: relative; animation: rykuBob 3s ease-in-out infinite; }
+      .ryku-wrap img { width: min(205px, 56vw); height: auto; display: block; }
+      .ryku-sparks { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
       @keyframes rykuBob {
         0%, 100% { transform: translateY(0); }
         50% { transform: translateY(-7px); }
-      }
-      @keyframes shadowPulse {
-        0%, 100% { transform: scaleX(1); opacity: 0.55; }
-        50% { transform: scaleX(0.82); opacity: 0.35; }
-      }
-      .mascot-stage .wing-l { transform-box: fill-box; transform-origin: 88% 18%; animation: flapL 1.8s ease-in-out infinite; }
-      .mascot-stage .wing-r { transform-box: fill-box; transform-origin: 12% 18%; animation: flapR 1.8s ease-in-out infinite; }
-      @keyframes flapL { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-9deg); } }
-      @keyframes flapR { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(9deg); } }
-      .mascot-stage .eye { transform-box: fill-box; transform-origin: center; animation: blink 4.4s infinite; }
-      @keyframes blink {
-        0%, 92%, 100% { transform: scaleY(1); }
-        95% { transform: scaleY(0.08); }
-      }
-      .mascot-stage .tail { transform-box: fill-box; transform-origin: 12% 88%; animation: sway 3s ease-in-out infinite; }
-      @keyframes sway { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(6deg); } }
-      .mascot-stage .flame { transform-box: fill-box; transform-origin: 0% 50%; opacity: 0; animation: puff 4.4s ease-in-out infinite; }
-      @keyframes puff {
-        0%, 78%, 100% { transform: scale(0); opacity: 0; }
-        84% { transform: scale(1); opacity: 1; }
-        92% { transform: scale(0.55) translateX(4px); opacity: 0; }
       }
       .mascot-stage .spark { transform-box: fill-box; transform-origin: center; animation: twinkle 2.6s ease-in-out infinite; }
       .mascot-stage .spark.s2 { animation-delay: 0.7s; }
@@ -322,9 +300,7 @@
       }
       .mascot-stage.celebrate .spark { animation-duration: 0.9s; }
       @media (prefers-reduced-motion: reduce) {
-        .ryku-wrap, .ryku-shadow, .mascot-stage .wing-l, .mascot-stage .wing-r,
-        .mascot-stage .eye, .mascot-stage .tail, .mascot-stage .flame,
-        .mascot-stage .spark, .hcard, #wResults { animation: none; }
+        .ryku-wrap, .mascot-stage .spark, .hcard, #wResults { animation: none; }
       }
       .hc-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px 20px; flex-wrap: wrap;
         border-bottom: 1px solid var(--ink-18); padding-bottom: 16px; }
@@ -503,68 +479,14 @@
         <p class="wstatus" id="wStatus" role="status" aria-live="polite"></p>
         <div class="mascot-stage" id="mascotStage" hidden aria-hidden="true">
           <div class="ryku-wrap">
-            <svg viewBox="0 0 240 212" focusable="false" role="img" aria-label="Ryku, the Raiku dragon mascot">
-              <!-- sparkles -->
-              <path class="spark s1" fill="#E9C46A" stroke="#223D0E" stroke-width="1.6" d="M30 34l3.2 8.8L42 46l-8.8 3.2L30 58l-3.2-8.8L18 46l8.8-3.2z"/>
-              <path class="spark s2" fill="#E9C46A" stroke="#223D0E" stroke-width="1.6" d="M208 44l2.6 7.4 7.4 2.6-7.4 2.6L208 64l-2.6-7.4L198 54l7.4-2.6z"/>
-              <path class="spark s3" fill="#E9C46A" stroke="#223D0E" stroke-width="1.6" d="M22 132l2.2 6.3 6.3 2.2-6.3 2.2L22 149l-2.2-6.3-6.3-2.2 6.3-2.2z"/>
-              <path class="spark s4" fill="#E9C46A" stroke="#223D0E" stroke-width="1.6" d="M216 128l2.2 6.3 6.3 2.2-6.3 2.2-2.2 6.3-2.2-6.3-6.3-2.2 6.3-2.2z"/>
-              <!-- tail -->
-              <g class="tail">
-                <path fill="#5DA23C" stroke="#223D0E" stroke-width="3" stroke-linejoin="round" d="M172 168c22 4 38-6 44-26 2-7-1-13-7-14-5-1-9 2-11 8-4 12-14 19-28 18z"/>
-                <path fill="#3E7C2B" stroke="#223D0E" stroke-width="3" stroke-linejoin="round" d="M205 116l14-12-2 18-8 8z"/>
-              </g>
-              <!-- wings -->
-              <g class="wing-l">
-                <path fill="#B7D98A" stroke="#223D0E" stroke-width="3" stroke-linejoin="round" d="M78 78C52 62 30 64 16 82c12 2 18 8 20 16 8-4 16-3 22 3 6-8 14-14 24-16z"/>
-                <path fill="none" stroke="#223D0E" stroke-width="2" stroke-linecap="round" d="M74 82c-14-8-30-10-44-4M66 92c-10-4-20-4-28 0"/>
-              </g>
-              <g class="wing-r">
-                <path fill="#B7D98A" stroke="#223D0E" stroke-width="3" stroke-linejoin="round" d="M162 78c26-16 48-14 62 4-12 2-18 8-20 16-8-4-16-3-22 3-6-8-14-14-24-16z"/>
-                <path fill="none" stroke="#223D0E" stroke-width="2" stroke-linecap="round" d="M166 82c14-8 30-10 44-4M174 92c10-4 20-4 28 0"/>
-              </g>
-              <!-- horns -->
-              <path fill="#F6EBCB" stroke="#223D0E" stroke-width="3" stroke-linejoin="round" d="M86 44c-4-14 0-26 10-34 2 12 0 24-4 34z"/>
-              <path fill="#F6EBCB" stroke="#223D0E" stroke-width="3" stroke-linejoin="round" d="M154 44c4-14 0-26-10-34-2 12 0 24 4 34z"/>
-              <!-- ear fins -->
-              <path fill="#3E7C2B" stroke="#223D0E" stroke-width="3" stroke-linejoin="round" d="M64 84L44 74l6 22z"/>
-              <path fill="#3E7C2B" stroke="#223D0E" stroke-width="3" stroke-linejoin="round" d="M176 84l20-10-6 22z"/>
-              <!-- body -->
-              <path fill="#5DA23C" stroke="#223D0E" stroke-width="3" stroke-linejoin="round" d="M120 38c34 0 56 30 56 72 0 46-24 78-56 78s-56-32-56-78c0-42 22-72 56-72z"/>
-              <!-- belly -->
-              <ellipse cx="120" cy="152" rx="33" ry="34" fill="#F6EBCB" stroke="#223D0E" stroke-width="2.5"/>
-              <path fill="none" stroke="#223D0E" stroke-width="2" stroke-linecap="round" opacity="0.45" d="M96 140c8 4 16 6 24 6s16-2 24-6M94 156c9 4 17 6 26 6s17-2 26-6M98 172c7 3 14 5 22 5s15-2 22-5"/>
-              <!-- arms -->
-              <ellipse cx="62" cy="148" rx="9" ry="15" fill="#5DA23C" stroke="#223D0E" stroke-width="3" transform="rotate(18 62 148)"/>
-              <ellipse cx="178" cy="148" rx="9" ry="15" fill="#5DA23C" stroke="#223D0E" stroke-width="3" transform="rotate(-18 178 148)"/>
-              <!-- feet -->
-              <ellipse cx="94" cy="196" rx="15" ry="7" fill="#3E7C2B" stroke="#223D0E" stroke-width="3"/>
-              <ellipse cx="146" cy="196" rx="15" ry="7" fill="#3E7C2B" stroke="#223D0E" stroke-width="3"/>
-              <!-- cheeks -->
-              <ellipse cx="82" cy="122" rx="9" ry="5.5" fill="#F2A65A" opacity="0.55"/>
-              <ellipse cx="158" cy="122" rx="9" ry="5.5" fill="#F2A65A" opacity="0.55"/>
-              <!-- eyes -->
-              <g class="eye">
-                <ellipse cx="98" cy="102" rx="7.5" ry="11" fill="#223D0E"/>
-                <circle cx="100.5" cy="97.5" r="2.6" fill="#EFEEE9"/>
-              </g>
-              <g class="eye">
-                <ellipse cx="142" cy="102" rx="7.5" ry="11" fill="#223D0E"/>
-                <circle cx="144.5" cy="97.5" r="2.6" fill="#EFEEE9"/>
-              </g>
-              <!-- muzzle -->
-              <ellipse cx="120" cy="126" rx="21" ry="14" fill="#8CC63F" stroke="#223D0E" stroke-width="2.5"/>
-              <circle cx="112" cy="122" r="2.2" fill="#223D0E"/>
-              <circle cx="128" cy="122" r="2.2" fill="#223D0E"/>
-              <path fill="none" stroke="#223D0E" stroke-width="2.5" stroke-linecap="round" d="M110 132c3 3.5 6.5 5 10 5s7-1.5 10-5"/>
-              <!-- flame puff -->
-              <g class="flame">
-                <path fill="#F59E0B" stroke="#223D0E" stroke-width="2" stroke-linejoin="round" d="M138 130c8-6 14-4 20 2-6 5-13 7-20 4z"/>
-                <path fill="#FCD34D" d="M142 131c5-3 9-2 13 1-4 3-8 4-13 2z"/>
-              </g>
+            <img src="ryku.webp" alt="" width="560" height="563" />
+            <svg class="ryku-sparks" viewBox="0 0 100 100" focusable="false">
+              <path class="spark s1" fill="#E9C46A" stroke="#223D0E" stroke-width="0.7" d="M10 8l1.6 4.4L16 14l-4.4 1.6L10 20l-1.6-4.4L4 14l4.4-1.6z"/>
+              <path class="spark s2" fill="#E9C46A" stroke="#223D0E" stroke-width="0.7" d="M90 6l1.3 3.7L95 11l-3.7 1.3L90 16l-1.3-3.7L85 11l3.7-1.3z"/>
+              <path class="spark s3" fill="#E9C46A" stroke="#223D0E" stroke-width="0.7" d="M6 48l1.1 3.1L10.2 52.2l-3.1 1.1L6 56.4l-1.1-3.1-3.1-1.1 3.1-1.1z"/>
+              <path class="spark s4" fill="#E9C46A" stroke="#223D0E" stroke-width="0.7" d="M94 44l1.1 3.1 3.1 1.1-3.1 1.1-1.1 3.1-1.1-3.1-3.1-1.1 3.1-1.1z"/>
             </svg>
           </div>
-          <div class="ryku-shadow"></div>
         </div>
         <div class="hcard" id="hCard" hidden>
           <div class="hc-top">
