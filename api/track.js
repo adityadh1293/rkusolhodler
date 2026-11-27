@@ -28,7 +28,7 @@ async function pipeline(env, commands) {
 
 async function abacusHit(key) {
   const res = await fetch("https://abacus.jasoncameron.dev/hit/" + ABACUS_NS + "/" + key, {
-    signal: AbortSignal.timeout(5000),
+    signal: AbortSignal.timeout(8000),
   });
   if (!res.ok) throw new Error("abacus http " + res.status);
   const j = await res.json();
@@ -70,11 +70,9 @@ module.exports = async (req, res) => {
       if (t === "check" && validHash) cmds.push(["SADD", "rkusol:addrs", validHash]);
       await pipeline(env, cmds);
     } else if (t === "visit") {
-      await abacusHit("visits");
-      await abacusHit("visits-" + day);
+      await Promise.all([abacusHit("visits"), abacusHit("visits-" + day)]);
     } else {
-      await abacusHit("checks");
-      await abacusHit("checks-" + day);
+      await Promise.all([abacusHit("checks"), abacusHit("checks-" + day)]);
       if (validHash) {
         const seen = await abacusHit("addr-" + validHash);
         if (seen === 1) await abacusHit("unique");
