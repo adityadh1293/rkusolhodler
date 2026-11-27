@@ -105,6 +105,15 @@
         letter-spacing: 0.04em;
       }
       .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px 64px; }
+      html { scroll-behavior: smooth; }
+      @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+      section, header.hero { scroll-margin-top: 66px; }
+      .mainnav { position: sticky; top: 0; z-index: 50; background: var(--paper); border-bottom: 1px solid var(--ink-18); margin-top: 14px; }
+      .mainnav ul { display: flex; gap: 6px; list-style: none; margin: 0; padding: 9px 0; overflow-x: auto; scrollbar-width: none; }
+      .mainnav ul::-webkit-scrollbar { display: none; }
+      .mainnav a { display: inline-block; padding: 7px 13px; border: 1px solid var(--ink-18); border-radius: 999px; font-family: "Geist Mono", ui-monospace, monospace; font-size: 12px; text-decoration: none; color: var(--ink); white-space: nowrap; }
+      .mainnav a:hover { background: var(--ink); color: var(--paper); }
+      .mainnav a.active { background: var(--ink); color: var(--paper); }
 
       /* ——— Top rule bar ——— */
       .topbar {
@@ -504,7 +513,20 @@
         </div>
       </div>
 
-      <header class="hero">
+      <nav class="mainnav" aria-label="Sections">
+        <ul>
+          <li><a href="#top" data-i18n="navStats">Stats</a></li>
+          <li><a href="#walletH" data-i18n="navWallet">Check wallet</a></li>
+          <li><a href="#chartH" data-i18n="navChart">Chart</a></li>
+          <li><a href="#stakesH" data-i18n="navStakes">Latest stakes</a></li>
+          <li><a href="#valH" data-i18n="navValidator">Validator blocks</a></li>
+          <li><a href="#loopH" data-i18n="navLoop">Loop calculator</a></li>
+          <li><a href="#aboutH" data-i18n="navYield">Yield</a></li>
+          <li><a href="#howH" data-i18n="navHow">How to stake</a></li>
+        </ul>
+      </nav>
+
+      <header class="hero" id="top">
         <p class="kicker mono" data-i18n="kicker">Raiku · Liquid staking on Solana</p>
         <h1 data-i18n="heroTitle">Every SOL staked with Raiku, in plain sight.</h1>
         <p class="lede" data-i18n="heroSub">rkuSOL is Raiku's liquid staking token. This public page tracks how much SOL is staked behind it, what the pool is worth, how many wallets hold it, and how the total has moved since launch — all from public, verifiable sources.</p>
@@ -1074,6 +1096,7 @@
           footerLeft:"Community-made website — not official, not affiliated with Raiku.",
           chartAria:"Line chart of rkuSOL total value locked in US dollars",
           statScore:"Total holder score", statScoreSub:"Every holder's balance-days combined (1 rkuSOL = 1 point per day), from on-chain supply history. Grows live.", liveBadge:"Live",
+          navStats:"Stats", navWallet:"Check wallet", navChart:"Chart", navStakes:"Latest stakes", navValidator:"Validator blocks", navLoop:"Loop calculator", navYield:"Yield", navHow:"How to stake",
           stakesTitle:"Latest rkuSOL stakes", stakesTag:"Live · On-chain",
           stakesIntro:"The most recent rkuSOL stake, unstake and transfer activity, read live from the mint account's transactions on Solana mainnet.",
           stakesColType:"Type", stakesColAmt:"Amount", stakesColWallet:"Wallet", stakesColTime:"Time", stakesColTx:"Tx",
@@ -1141,6 +1164,7 @@
           footerLeft:"Website buatan komunitas — bukan resmi, tidak berafiliasi dengan Raiku.",
           chartAria:"Grafik garis total nilai terkunci rkuSOL dalam dolar AS",
           statScore:"Total skor holder", statScoreSub:"Gabungan saldo-harian semua holder (1 rkuSOL = 1 poin per hari), dari riwayat suplai on-chain. Bertambah live.", liveBadge:"Live",
+          navStats:"Statistik", navWallet:"Cek dompet", navChart:"Grafik", navStakes:"Stake terbaru", navValidator:"Blok validator", navLoop:"Kalkulator loop", navYield:"Yield", navHow:"Cara stake",
           stakesTitle:"Stake rkuSOL terbaru", stakesTag:"Live · On-chain",
           stakesIntro:"Aktivitas stake, unstake, dan transfer rkuSOL paling baru, dibaca live dari transaksi akun mint di Solana mainnet.",
           stakesColType:"Tipe", stakesColAmt:"Jumlah", stakesColWallet:"Dompet", stakesColTime:"Waktu", stakesColTx:"Tx",
@@ -9011,6 +9035,30 @@
         });
         updateLoopCalc();
       }
+
+      /* Highlight the nav link of the section currently in view. */
+      (function () {
+        var links = {};
+        document.querySelectorAll(".mainnav a").forEach(function (a) {
+          links[a.getAttribute("href").slice(1)] = a;
+        });
+        var targets = [];
+        Object.keys(links).forEach(function (id) {
+          var el = document.getElementById(id);
+          if (el) targets.push(el.closest("section") || el);
+        });
+        if (!("IntersectionObserver" in window) || !targets.length) return;
+        var obs = new IntersectionObserver(function (entries) {
+          entries.forEach(function (en) {
+            if (!en.isIntersecting) return;
+            var h = en.target.querySelector("h2[id]") || en.target;
+            Object.keys(links).forEach(function (id) {
+              links[id].classList.toggle("active", id === h.id || (id === "top" && en.target.id === "top"));
+            });
+          });
+        }, { rootMargin: "-40% 0px -55% 0px" });
+        targets.forEach(function (t) { obs.observe(t); });
+      })();
 
       applyLang("en");
       fetchLive();
