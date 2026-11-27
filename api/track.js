@@ -2,9 +2,12 @@
 // Counts page visits and wallet checks; for checks it stores only the
 // SHA-256 hash of the address (computed in the browser) to count unique
 // addresses — raw addresses are never stored here.
-// Storage: Upstash Redis via REST (env UPSTASH_REDIS_REST_URL /
-// UPSTASH_REDIS_REST_TOKEN, or the legacy KV_REST_API_* names).
-// Without those env vars this endpoint is a harmless no-op.
+// Storage: Upstash Redis via REST when configured (env
+// UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN, or KV_REST_API_*);
+// otherwise falls back to the free Abacus counter API so counts work
+// immediately with zero setup.
+
+const ABACUS_NS = "rkusolhodler-stats-v1";
 
 function redisEnv() {
   const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
@@ -23,6 +26,15 @@ async function pipeline(env, commands) {
   return res.json();
 }
 
+async function abacusHit(key) {
+  const res = await fetch("https://abacus.jasoncameron.dev/hit/" + ABACUS_NS + "/" + key, {
+    signal: AbortSignal.timeout(5000),
+  });
+  if (!res.ok) throw new Error("abacus http " + res.status);
+  const j = await res.json();
+  return typeof j.value === "number" ? j.value : 0;
+}
+
 function wibDate() {
   const d = new Date(Date.now() + 7 * 3600 * 1000);
   const p = (n) => String(n).padStart(2, "0");
@@ -36,32 +48,38 @@ module.exports = async (req, res) => {
     res.end(JSON.stringify({ ok: false, error: "method" }));
     return;
   }
-  const env = redisEnv();
-  if (!env) {
-    res.status(200);
-    res.end(JSON.stringify({ ok: false, configured: false }));
-    return;
-  }
   let body = req.body;
   if (typeof body === "string") {
     try { body = JSON.parse(body); } catch (e) { body = null; }
   }
   const t = body && body.t;
-  const day = wibDate();
-  const cmds = [];
-  if (t === "visit") {
-    cmds.push(["INCR", "rkusol:visits"], ["INCR", "rkusol:visits:" + day], ["EXPIRE", "rkusol:visits:" + day, 7776000]);
-  } else if (t === "check") {
-    cmds.push(["INCR", "rkusol:checks"], ["INCR", "rkusol:checks:" + day], ["EXPIRE", "rkusol:checks:" + day, 7776000]);
-    const h = body && body.h;
-    if (typeof h === "string" && /^[0-9a-f]{64}$/.test(h)) cmds.push(["SADD", "rkusol:addrs", h]);
-  } else {
+  if (t !== "visit" && t !== "check") {
     res.status(400);
     res.end(JSON.stringify({ ok: false, error: "bad type" }));
     return;
   }
+  const day = wibDate();
+  const h = body && body.h;
+  const validHash = typeof h === "string" && /^[0-9a-f]{64}$/.test(h) ? h : null;
   try {
-    await pipeline(env, cmds);
+    const env = redisEnv();
+    if (env) {
+      const cmds = t === "visit"
+        ? [["INCR", "rkusol:visits"], ["INCR", "rkusol:visits:" + day], ["EXPIRE", "rkusol:visits:" + day, 7776000]]
+        : [["INCR", "rkusol:checks"], ["INCR", "rkusol:checks:" + day], ["EXPIRE", "rkusol:checks:" + day, 7776000]];
+      if (t === "check" && validHash) cmds.push(["SADD", "rkusol:addrs", validHash]);
+      await pipeline(env, cmds);
+    } else if (t === "visit") {
+      await abacusHit("visits");
+      await abacusHit("visits-" + day);
+    } else {
+      await abacusHit("checks");
+      await abacusHit("checks-" + day);
+      if (validHash) {
+        const seen = await abacusHit("addr-" + validHash);
+        if (seen === 1) await abacusHit("unique");
+      }
+    }
     res.status(200);
     res.end(JSON.stringify({ ok: true }));
   } catch (e) {
