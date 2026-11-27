@@ -74,7 +74,7 @@ module.exports = async (req, res) => {
     } else {
       await Promise.all([abacusHit("checks"), abacusHit("checks-" + day)]);
       if (validHash) {
-        const seen = await abacusHit("addr-" + validHash);
+        const seen = await abacusHit("addr-" + validHash.slice(0, 32));
         if (seen === 1) await abacusHit("unique");
       }
     }
