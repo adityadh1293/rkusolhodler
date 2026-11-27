@@ -30,6 +30,7 @@ function send(res, status, payload) {
   res.status(status);
   res.setHeader("Content-Type", "application/json");
   res.setHeader("Cache-Control", "no-store");
+  res.setHeader("Access-Control-Allow-Origin", "*");
   res.end(JSON.stringify(payload));
 }
 

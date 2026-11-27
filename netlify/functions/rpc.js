@@ -35,7 +35,7 @@ const UPSTREAM_TIMEOUT_MS = 12000;
 function jsonResponse(status, payload) {
   return {
     statusCode: status,
-    headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+    headers: { "Content-Type": "application/json", "Cache-Control": "no-store", "Access-Control-Allow-Origin": "*" },
     body: JSON.stringify(payload)
   };
 }
