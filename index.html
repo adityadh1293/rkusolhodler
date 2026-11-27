@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net data:; img-src 'self' data: blob:; connect-src 'self' https://api.mainnet-beta.solana.com https://solana.api.onfinality.io https://solana-rpc.publicnode.com https://solana-mainnet.g.alchemy.com; object-src 'none'; base-uri 'none'; form-action 'self'" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net data:; img-src 'self' data: blob:; connect-src 'self' https://api.mainnet-beta.solana.com https://solana.api.onfinality.io https://solana-rpc.publicnode.com https://solana-mainnet.g.alchemy.com https://api.kamino.finance; object-src 'none'; base-uri 'none'; form-action 'self'" />
     <meta name="referrer" content="no-referrer" />
     <meta name="description" content="A public dashboard for Raiku's rkuSOL liquid staking: total SOL staked, TVL, holders, APY and TVL history, from public sources." />
     <meta property="og:title" content="rkuSOL Staking — Raiku Public Dashboard" />
@@ -849,7 +849,7 @@
             <p class="sub"><span data-i18n="loopCost">Borrow cost / yr</span> <span id="loopCost">—</span></p>
           </div>
         </div>
-        <p class="feed-status" data-i18n="loopNote">Defaults: staking APY is the Sanctum snapshot shown above; borrow APY is an editable assumption — set it from the lending market you would actually use (e.g. Kamino). Leverage multiplies losses as well as gains and can be liquidated if rkuSOL depegs or rates move.</p>
+        <p class="feed-status" data-i18n="loopNote">Defaults: staking APY is the Sanctum snapshot shown above; borrow APY loads live from Kamino's main SOL market and stays editable. Leverage multiplies losses as well as gains and can be liquidated if rkuSOL depegs or rates move.</p>
       </section>
 
       <section aria-labelledby="aboutH">
@@ -1114,7 +1114,7 @@
           loopCol:"Total collateral", loopDebt:"Borrowed debt", loopGross:"Gross yield / yr", loopCost:"Borrow cost / yr",
           loopSpreadPos:"Positive spread", loopSpreadNeg:"Negative spread",
           loopWarn:"Negative spread: the borrow APY is above the staking APY, so looping loses money at these inputs.",
-          loopNote:"Defaults: staking APY is the Sanctum snapshot shown above; borrow APY is an editable assumption — set it from the lending market you would actually use (e.g. Kamino). Leverage multiplies losses as well as gains and can be liquidated if rkuSOL depegs or rates move."
+          loopNote:"Defaults: staking APY is the Sanctum snapshot shown above; borrow APY loads live from Kamino's main SOL market and stays editable. Leverage multiplies losses as well as gains and can be liquidated if rkuSOL depegs or rates move."
         },
         id: {
           snapBadge:"Cuplikan · 25 Nov 2026", footerSnap:"CUPLIKAN · 25 NOV 2026 · 23:36 WIB (UTC+7)",
@@ -1182,7 +1182,7 @@
           loopCol:"Total kolateral", loopDebt:"Utang pinjaman", loopGross:"Yield kotor / thn", loopCost:"Biaya pinjam / thn",
           loopSpreadPos:"Spread positif", loopSpreadNeg:"Spread negatif",
           loopWarn:"Spread negatif: APY pinjam di atas APY staking, jadi looping merugi pada input ini.",
-          loopNote:"Default: APY staking adalah snapshot Sanctum di atas; APY pinjam adalah asumsi yang bisa diubah — tetapkan dari pasar pinjaman yang benar-benar akan kamu pakai (mis. Kamino). Leverage melipatgandakan kerugian juga dan bisa terlikuidasi bila rkuSOL depeg atau suku bunga bergerak."
+          loopNote:"Default: APY staking adalah snapshot Sanctum di atas; APY pinjam dimuat live dari pasar SOL utama Kamino dan tetap bisa diubah. Leverage melipatgandakan kerugian juga dan bisa terlikuidasi bila rkuSOL depeg atau suku bunga bergerak."
         },
         hi: {
           snapBadge:"स्नैपशॉट · 25 नवंबर 2026", footerSnap:"स्नैपशॉट · 25 नवंबर 2026 · 23:36 WIB (UTC+7)",
@@ -9029,6 +9029,17 @@
       function initLoopCalc() {
         var lst = document.getElementById("loopLstApy");
         if (lst) lst.value = SNAP.apy.toFixed(2);
+        /* Live SOL borrow APY from Kamino's main market; the input stays
+           editable and keeps its default if the fetch fails. */
+        fetch("https://api.kamino.finance/kamino-market/7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF/reserves/metrics")
+          .then(function (r) { return r.json(); })
+          .then(function (rows) {
+            if (!Array.isArray(rows)) return;
+            var sol = rows.find(function (x) { return x && x.liquidityToken === "SOL" && typeof x.borrowApy === "number" && x.borrowApy > 0; });
+            var bor = document.getElementById("loopBorApy");
+            if (sol && bor) { bor.value = (sol.borrowApy * 100).toFixed(2); updateLoopCalc(); }
+          })
+          .catch(function () {});
         ["loopCap", "loopLstApy", "loopBorApy", "loopLev"].forEach(function (id) {
           var el = document.getElementById(id);
           if (el) el.addEventListener("input", updateLoopCalc);
