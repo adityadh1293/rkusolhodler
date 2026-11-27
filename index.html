@@ -15,6 +15,7 @@
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0F1D06" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%230B0B0B'/%3E%3Cpath transform='translate(15 15) scale(0.7)' fill='%23C0FE37' d='M27.6 9.9L72.7 10L86.1 32.6L96 49.3L92.7 55.9L81.8 75.4L74.2 88.5L71.9 90.2L27.9 90.2L30.1 85L37.7 71.3L50 50.1L4.3 50L22.9 16.4L25.8 11.5Z'/%3E%3C/svg%3E" />
     <title>rkuSOL Staking — Raiku Public Dashboard</title>
+    <script defer src="/_vercel/insights/script.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/css/geist@latest/index.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/css/geist-mono@latest/index.css" />
     <style>
@@ -8411,6 +8412,35 @@
         document.body.removeChild(a);
       });
 
+      /* Anonymous usage counter: page visits + wallet checks. For a check
+         only the SHA-256 hash of the address is sent (to count unique
+         addresses); the raw address never goes to the counter. */
+      function trackSend(payload) {
+        try {
+          fetch("/.netlify/functions/track", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            keepalive: true,
+          }).catch(function () {});
+        } catch (e) { /* counting must never break the page */ }
+      }
+      function trackCheck(addr) {
+        try {
+          if (window.crypto && crypto.subtle && crypto.subtle.digest) {
+            crypto.subtle.digest("SHA-256", new TextEncoder().encode(addr)).then(function (buf) {
+              var hex = Array.prototype.map.call(new Uint8Array(buf), function (b) {
+                return ("0" + b.toString(16)).slice(-2);
+              }).join("");
+              trackSend({ t: "check", h: hex });
+            }).catch(function () { trackSend({ t: "check" }); });
+          } else {
+            trackSend({ t: "check" });
+          }
+        } catch (e) { /* ignore */ }
+      }
+      trackSend({ t: "visit" });
+
       document.getElementById("wform").addEventListener("submit", function (ev) {
         ev.preventDefault();
         if (inFlight) return;
@@ -8423,6 +8453,7 @@
           status.className = "wstatus err";
           return;
         }
+        trackCheck(addr);
         inFlight = true;
         var btn = document.getElementById("wBtn");
         btn.disabled = true;
