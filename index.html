@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net data:; img-src 'self' data: blob:; connect-src 'self' https://api.mainnet-beta.solana.com https://solana.api.onfinality.io https://solana-rpc.publicnode.com https://solana-mainnet.g.alchemy.com https://api.kamino.finance; object-src 'none'; base-uri 'none'; form-action 'self'" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net data:; img-src 'self' data: blob:; connect-src 'self' https://api.mainnet-beta.solana.com https://solana.api.onfinality.io https://solana-rpc.publicnode.com https://solana-mainnet.g.alchemy.com https://api.kamino.finance https://sdk-proxy.sns.id; object-src 'none'; base-uri 'none'; form-action 'self'" />
     <meta name="referrer" content="no-referrer" />
     <meta name="description" content="A public dashboard for Raiku's rkuSOL liquid staking: total SOL staked, TVL, holders, APY and TVL history, from public sources." />
     <meta property="og:title" content="rkuSOL Staking — Raiku Public Dashboard" />
@@ -580,11 +580,11 @@
           <h2 id="walletH" data-wi18n="walletTitle">Check a wallet</h2>
           <span class="mono" data-wi18n="walletTag">Solana · On-chain lookup</span>
         </div>
-        <p class="sec-intro" data-wi18n="walletIntro">Paste any Solana wallet address to read its rkuSOL position straight from the chain: total tokens held, the SOL those tokens represent, and the wallet's share of the total supply. Balances are fetched live from a public Solana RPC the moment you check.</p>
+        <p class="sec-intro" data-wi18n="walletIntro">Paste any Solana wallet address — or a .sol name — to read its rkuSOL position straight from the chain: total tokens held, the SOL those tokens represent, and the wallet's share of the total supply. Balances are fetched live from a public Solana RPC the moment you check.</p>
         <form class="wform" id="wform">
           <div>
-            <label for="wAddr" data-wi18n="walletLabel">Solana wallet address</label>
-            <input id="wAddr" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="44" placeholder="Paste a Solana address…" />
+            <label for="wAddr" data-wi18n="walletLabel">Solana wallet address or .sol name</label>
+            <input id="wAddr" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="80" placeholder="Paste a Solana address or .sol name…" />
           </div>
           <button type="submit" class="add-btn" id="wBtn" data-wi18n="checkBtn">Check wallet</button>
         </form>
@@ -5901,19 +5901,21 @@
       ];
       var WI18N = {
         en: { walletTitle:"Check a wallet", walletTag:"Solana · On-chain lookup",
-          walletIntro:"Paste any Solana wallet address to read its rkuSOL position straight from the chain: total tokens held, the SOL those tokens represent, and the wallet's share of the total supply. Balances are fetched live from a public Solana RPC the moment you check.",
-          walletLabel:"Solana wallet address", walletPlaceholder:"Paste a Solana address…", checkBtn:"Check wallet", checking:"Reading the chain…",
+          walletIntro:"Paste any Solana wallet address — or a .sol name — to read its rkuSOL position straight from the chain: total tokens held, the SOL those tokens represent, and the wallet's share of the total supply. Balances are fetched live from a public Solana RPC the moment you check.",
+          walletLabel:"Solana wallet address or .sol name", walletPlaceholder:"Paste a Solana address or .sol name…", checkBtn:"Check wallet", checking:"Reading the chain…",
           resRku:"rkuSOL held", resSol:"SOL balance", resStake:"Stake value", resUsd:"Value", resShare:"Share of supply", resPoints:"Holder points", resSpl:"SPL tokens held", resLast:"Last active", resYield:"Est. annual yield", yieldSub:"Estimate at the snapshot APY above, on the SOL value staked.", resBorrow:"Borrow power (75% LTV)", borrowSub:"Estimate: position value × 75% max LTV, before any market's own limits.",
           pointsNone:"None published — Raiku runs no official points programme, so no points balance exists on-chain.",
           invalidAddr:"That doesn't look like a valid Solana address. Please check it and try again.",
+          invalidSol:"That .sol name could not be resolved. Please check it and try again.",
           lookupFail:"The lookup failed — the public Solana RPC did not answer. Please try again in a moment.",
           checkedAt:"Checked", viewExplorer:"View on Solscan" },
         id: { walletTitle:"Cek dompet", walletTag:"Solana · Pencarian on-chain",
-          walletIntro:"Tempel alamat dompet Solana mana pun untuk membaca posisi rkuSOL-nya langsung dari chain: total token yang dipegang, berapa SOL yang diwakili token itu, dan porsi dompet tersebut dari total suplai. Saldo diambil live dari RPC publik Solana saat kamu mengecek.",
-          walletLabel:"Alamat dompet Solana", walletPlaceholder:"Tempel alamat Solana…", checkBtn:"Cek dompet", checking:"Membaca chain…",
+          walletIntro:"Tempel alamat dompet Solana mana pun — atau nama .sol — untuk membaca posisi rkuSOL-nya langsung dari chain: total token yang dipegang, berapa SOL yang diwakili token itu, dan porsi dompet tersebut dari total suplai. Saldo diambil live dari RPC publik Solana saat kamu mengecek.",
+          walletLabel:"Alamat dompet Solana atau nama .sol", walletPlaceholder:"Tempel alamat Solana atau nama .sol…", checkBtn:"Cek dompet", checking:"Membaca chain…",
           resRku:"rkuSOL yang dipegang", resSol:"Saldo SOL", resStake:"Nilai stake", resUsd:"Nilai", resShare:"Porsi dari suplai", resPoints:"Poin holder", resSpl:"Token SPL dipegang", resLast:"Aktivitas terakhir", resYield:"Estimasi yield tahunan", yieldSub:"Perkiraan pada APY snapshot di atas, dari nilai SOL yang di-stake.", resBorrow:"Daya pinjam (LTV 75%)", borrowSub:"Perkiraan: nilai posisi × LTV maksimum 75%, sebelum batas tiap pasar.",
           pointsNone:"Tidak ada yang diterbitkan — Raiku tidak menjalankan program poin resmi, jadi tidak ada saldo poin di chain.",
           invalidAddr:"Alamat itu sepertinya bukan alamat Solana yang valid. Periksa lagi lalu coba kembali.",
+          invalidSol:"Nama .sol itu tidak bisa ditemukan. Periksa lagi lalu coba kembali.",
           lookupFail:"Pencarian gagal — RPC publik Solana tidak menjawab. Coba lagi sebentar lagi.",
           checkedAt:"Dicek", viewExplorer:"Lihat di Solscan" },
         hi: { walletTitle:"वॉलेट जांचें", walletTag:"Solana · ऑन-चेन खोज",
@@ -8156,6 +8158,52 @@
       function shortAddr(a) { return a.slice(0, 4) + "…" + a.slice(-4); }
       function maskAddr(a) { return a.slice(0, 6) + "…" + a.slice(-6); }
 
+      /* ——— Solana Name Service (.sol) ———
+         Name resolution via the public SNS SDK proxy (CORS-open).
+         A typed .sol name is resolved to its owner address, which
+         must still pass the strict address check above before any
+         chain lookup runs. The reverse lookup (address → .sol
+         name) is best-effort decoration for the holder card and
+         never blocks or breaks a wallet check. */
+      var SNS_PROXY = "https://sdk-proxy.sns.id";
+      function snsFetch(path) {
+        var ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+        var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, 10000) : null;
+        return fetch(SNS_PROXY + path, { signal: ctrl ? ctrl.signal : undefined })
+          .then(function (r) {
+            if (timer) clearTimeout(timer);
+            if (!r.ok) throw new Error("http");
+            return r.json();
+          })
+          .catch(function (e) { if (timer) clearTimeout(timer); throw e; });
+      }
+      function snsResolve(name) {
+        return snsFetch("/resolve/" + encodeURIComponent(name))
+          .then(function (j) {
+            if (j && j.s === "ok" && typeof j.result === "string" && isValidSolanaAddress(j.result)) return j.result;
+            return null;
+          })
+          .catch(function () { return null; });
+      }
+      function fetchSnsName(addr) {
+        snsFetch("/domains/" + addr)
+          .then(function (j) {
+            if (!lastWallet || lastWallet.addr !== addr || lastWallet.sns) return;
+            if (!j || j.s !== "ok" || !Array.isArray(j.result)) return;
+            var best = null;
+            j.result.forEach(function (d) {
+              if (d && typeof d.domain === "string" && /^[A-Za-z0-9._-]{1,63}$/.test(d.domain)) {
+                if (!best || d.domain.length < best.length) best = d.domain;
+              }
+            });
+            if (best) {
+              lastWallet.sns = best.toLowerCase() + ".sol";
+              document.getElementById("hcUser").textContent = lastWallet.sns;
+            }
+          })
+          .catch(function () {});
+      }
+
       /* ——— RPC access ———
          Fixed allowlist of public HTTPS endpoints, fixed JSON-RPC method
          names, a hard timeout on every call, and shape-checked results.
@@ -8483,7 +8531,7 @@
         var c = cdict();
         var lw = lastWallet;
         document.getElementById("hcRank").textContent = lw.rank ? "#" + fmtInt(lw.rank) : "—";
-        document.getElementById("hcUser").textContent = shortAddr(lw.addr);
+        document.getElementById("hcUser").textContent = lw.sns || shortAddr(lw.addr);
         var tier = tierFor(lw.rku);
         document.getElementById("hcTier").textContent = tier ? "rkuSOL " + tier : c.none;
         document.getElementById("hcAddr").textContent = maskAddr(lw.addr);
@@ -8654,8 +8702,12 @@
         g.restore();
         g.strokeStyle = "rgba(34,61,14,0.35)"; g.lineWidth = 1;
         g.strokeRect(66, 206, 124, 124);
-        g.fillStyle = "#223D0E"; g.font = "700 46px system-ui, sans-serif";
-        g.fillText(shortAddr(lw.addr), 226, 262);
+        g.fillStyle = "#223D0E";
+        var userTxt = lw.sns || shortAddr(lw.addr);
+        var ufs = 46;
+        g.font = "700 " + ufs + "px system-ui, sans-serif";
+        while (g.measureText(userTxt).width > 560 && ufs > 20) { ufs -= 2; g.font = "700 " + ufs + "px system-ui, sans-serif"; }
+        g.fillText(userTxt, 226, 262);
         var tier = tierFor(lw.rku);
         var tierTxt = tier ? "rkuSOL " + tier : c.none;
         g.font = "600 24px system-ui, sans-serif";
@@ -8729,18 +8781,10 @@
       }
       trackSend({ t: "visit" });
 
-      document.getElementById("wform").addEventListener("submit", function (ev) {
-        ev.preventDefault();
-        if (inFlight) return;
+      function runWalletCheck(addr, snsName) {
         var w = wdict();
         var c = cdict();
         var status = document.getElementById("wStatus");
-        var addr = document.getElementById("wAddr").value.trim();
-        if (!isValidSolanaAddress(addr)) {
-          status.textContent = w.invalidAddr;
-          status.className = "wstatus err";
-          return;
-        }
         trackCheck(addr);
         inFlight = true;
         var btn = document.getElementById("wBtn");
@@ -8774,7 +8818,7 @@
                 status.textContent = c.rankp;
                 return computeRank(addr, rku, hist.score).then(function (rk) {
                   lastWallet = {
-                    addr: addr, rku: rku, sol: sol, when: new Date(),
+                    addr: addr, rku: rku, sol: sol, when: new Date(), sns: snsName || null,
                     days: hist.days, score: hist.score, capped: hist.capped, approx: hist.approx,
                     rank: rk ? rk.rank : null, rankTotal: rk ? rk.total : null,
                     rankByScore: rk ? !!rk.byScore : false, rankAsOf: rk ? rk.asOf : null
@@ -8782,6 +8826,7 @@
                   renderWalletResult();
                   renderCard();
                   fetchWalletExtras(addr);
+                  if (!snsName) fetchSnsName(addr);
                   status.textContent = hist.capped ? w.lookupFail : (hist.approx ? c.partial : "");
                   status.className = hist.capped ? "wstatus err" : "wstatus";
                 });
@@ -8795,6 +8840,45 @@
           inFlight = false;
           btn.disabled = false;
         });
+      }
+
+      document.getElementById("wform").addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        if (inFlight) return;
+        var w = wdict();
+        var status = document.getElementById("wStatus");
+        var raw = document.getElementById("wAddr").value.trim();
+        var solMatch = /^(.+)\.sol$/i.exec(raw);
+        if (solMatch) {
+          var name = solMatch[1].trim().toLowerCase();
+          if (!/^[a-z0-9][a-z0-9._-]*$/.test(name)) {
+            status.textContent = w.invalidSol || WI18N.en.invalidSol;
+            status.className = "wstatus err";
+            return;
+          }
+          inFlight = true;
+          var btn = document.getElementById("wBtn");
+          btn.disabled = true;
+          status.textContent = w.checking;
+          status.className = "wstatus";
+          snsResolve(name).then(function (addr) {
+            if (!addr) {
+              status.textContent = w.invalidSol || WI18N.en.invalidSol;
+              status.className = "wstatus err";
+              inFlight = false;
+              btn.disabled = false;
+              return;
+            }
+            runWalletCheck(addr, name + ".sol");
+          });
+          return;
+        }
+        if (!isValidSolanaAddress(raw)) {
+          status.textContent = w.invalidAddr;
+          status.className = "wstatus err";
+          return;
+        }
+        runWalletCheck(raw, null);
       });
 
       /* ——— Live data + local-time badges + total holder score ———
