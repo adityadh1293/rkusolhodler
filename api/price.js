@@ -3,7 +3,7 @@
 // SOL/USD: Jupiter Price API v3, CoinGecko, DefiLlama coins — raced in parallel,
 // first success wins. Stake pool: DefiLlama protocol API (TVL series + staked SOL,
 // read on-chain by their adapter).
-// Response: { at, solUSD, solSource, stakedSOL, tvlUSD, series: [[isoDate, usd], ...] }
+// Response: { at, solUSD, solSource, stakedSOL, tvlUSD, series: [[isoDate, usd], ...], validator: { stakeSOL, leaderSlots, epoch, slotsInEpoch } }
 const SOL_MINT = "So11111111111111111111111111111111111111112";
 
 async function fetchJson(url, ms) {
@@ -38,13 +38,59 @@ async function solPrice() {
 }
 
 function pad2(n) { return (n < 10 ? "0" : "") + n; }
+// Raiku validator (mainnet) — live on-chain stats behind the Blackline
+// Power estimate: activated stake + leader slots in the current epoch.
+const VALIDATOR_IDENTITY = "9xcXe4WRAfbVoVgQmFD5xgFHioL9dD7c74pQZ7PeczT";
+const VALIDATOR_VOTE = "AVD61fbwxDGuLGCanPWQPxRjdqYk3icssz5u7JH8kbta";
+const RPC_UPSTREAMS = [
+  "https://api.mainnet-beta.solana.com",
+  "https://solana.api.onfinality.io/public",
+  "https://solana-rpc.publicnode.com",
+  "https://solana-mainnet.g.alchemy.com/v2/demo"
+];
+
+async function rpcCall(method, params) {
+  for (const url of RPC_UPSTREAMS) {
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: method, params: params }),
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!res.ok) continue;
+      const j = await res.json();
+      if (j && j.result !== undefined) return j.result;
+    } catch (e) { /* try next upstream */ }
+  }
+  return null;
+}
+
+async function validatorStats() {
+  const [va, ls, ei] = await Promise.all([
+    rpcCall("getVoteAccounts", [{ votePubkey: VALIDATOR_VOTE }]),
+    rpcCall("getLeaderSchedule", [null, { identity: VALIDATOR_IDENTITY }]),
+    rpcCall("getEpochInfo", []),
+  ]);
+  const out = {};
+  const cur = va && Array.isArray(va.current) ? va.current[0] : null;
+  if (cur && typeof cur.activatedStake === "number") out.stakeSOL = cur.activatedStake / 1e9;
+  const slots = ls && Array.isArray(ls[VALIDATOR_IDENTITY]) ? ls[VALIDATOR_IDENTITY].length : null;
+  if (typeof slots === "number") out.leaderSlots = slots;
+  if (ei && typeof ei.epoch === "number") out.epoch = ei.epoch;
+  if (ei && typeof ei.slotsInEpoch === "number") out.slotsInEpoch = ei.slotsInEpoch;
+  return Object.keys(out).length ? out : null;
+}
+
 
 export default async function handler(req, res) {
   const out = { at: Date.now() };
-  const [sol, proto] = await Promise.all([
+  const [sol, proto, val] = await Promise.all([
     solPrice(),
     fetchJson("https://api.llama.fi/protocol/raiku-staked-sol", 9000).catch(() => null),
+    validatorStats().catch(() => null),
   ]);
+  if (val) out.validator = val;
   if (sol) { out.solUSD = sol.price; out.solSource = sol.source; }
   const solChain = proto && proto.chainTvls && proto.chainTvls.Solana;
   if (solChain && Array.isArray(solChain.tvl) && solChain.tvl.length) {

@@ -348,7 +348,7 @@
       .hc-bal .unit { color: var(--ink-70); font-size: 14.5px; }
       .hc-grid { display: grid; grid-template-columns: 1fr; gap: 0; margin-top: 20px;
         border-top: 1px solid var(--ink-18); }
-      @media (min-width: 620px) { .hc-grid { grid-template-columns: 1fr 1fr; } }
+      @media (min-width: 620px) { .hc-grid { grid-template-columns: 1fr 1fr 1fr; } }
       .hc-cell { padding: 15px 4px 6px; }
       @media (min-width: 620px) { .hc-cell + .hc-cell { border-left: 1px solid var(--ink-18); padding-left: 20px; } }
       .hc-cell .lab { color: var(--ink-55); font-size: 12px; letter-spacing: 0.09em; }
@@ -600,6 +600,11 @@
             <div class="hc-cell">
               <div class="lab mono" id="hcScoreLab">SCORE</div>
               <div class="val lime" id="hcScore">0</div>
+            </div>
+            <div class="hc-cell">
+              <div class="lab mono" id="hcBlackLab">BLACKLINE POWER</div>
+              <div class="val" id="hcBlack">—</div>
+              <div class="unit">Slots/yr</div>
             </div>
           </div>
           <p class="hc-foot" id="hcScoreNote">Score = on-chain balance-days. Days Held starts at first detected rkuSOL acquisition.</p>
@@ -5530,6 +5535,17 @@
         if (SNAP.solUSD && rate) return rate * SNAP.solUSD;
         return SNAP.supply ? SNAP.tvlUSD / SNAP.supply : 0;
       }
+      /* Blackline Power (estimate): the holder's share of the Raiku
+         validator's leader slots per year, from live on-chain validator
+         data served by the price function (activated stake + leader
+         slots in the current epoch). Not an official Raiku metric. */
+      function blacklinePower(rku) {
+        var v = SNAP.validator;
+        if (!v || !(v.stakeSOL > 0) || !(v.leaderSlots > 0) || !(SNAP.supply > 0) || !(SNAP.stakedSOL > 0)) return null;
+        var rate = SNAP.stakedSOL / SNAP.supply;
+        var epochsPerYear = (365.25 * 86400) / ((v.slotsInEpoch || 432000) * 0.4);
+        return (rku * rate / v.stakeSOL) * v.leaderSlots * epochsPerYear;
+      }
       function renderNumbers() {
         var rate = SNAP.stakedSOL / SNAP.supply;
         var price = rkuPriceUSD(rate);
@@ -6845,7 +6861,8 @@
       /* ——— Holder Card strings ——— */
       var CARD_I18N = {
         en: {
-          sadCta:"Don't leave Ryku sad — stake your SOL for rkuSOL and join the holders.", sub:"rkuSOL Holder Card", rank:"leaderboard rank", bal:"RKUSOL BALANCE", days:"DAYS HELD", score:"SCORE",
+          sadCta:"Don't leave Ryku sad — stake your SOL for rkuSOL and join the holders.", sub:"rkuSOL Holder Card", rank:"leaderboard rank", bal:"RKUSOL BALANCE", days:"DAYS HELD", score:"SCORE", black:"BLACKLINE POWER",
+          blackNote:"Blackline Power is an estimate from live on-chain validator data: your share of the Raiku validator's leader slots per year.",
           note:"Score = on-chain balance-days (balance × days held; it stops while the balance is zero). Days Held starts at first detected rkuSOL acquisition.",
           dl:"Download card (PNG)", solscan:"View on Solscan", none:"No rkuSOL yet",
           hist:"Reconstructing holding history from past transactions…", rankp:"Ranking this wallet against all holders…",
@@ -6854,7 +6871,8 @@
           comm:"Community holder card, computed locally in your browser — not an official Raiku points programme. The address is sent only to the public Solana RPC endpoints this page connects to; nothing is stored.",
           partial:"Part of this wallet's history could not be read in full, so its score is an estimate. Days held is exact." },
         id: {
-          sadCta:"Jangan biarkan Ryku sedih — stake SOL-mu jadi rkuSOL dan bergabunglah dengan para holder.", sub:"rkuSOL Holder Card", rank:"peringkat leaderboard", bal:"SALDO RKUSOL", days:"HARI DIPEGANG", score:"SKOR",
+          sadCta:"Jangan biarkan Ryku sedih — stake SOL-mu jadi rkuSOL dan bergabunglah dengan para holder.", sub:"rkuSOL Holder Card", rank:"peringkat leaderboard", bal:"SALDO RKUSOL", days:"HARI DIPEGANG", score:"SKOR", black:"BLACKLINE POWER",
+          blackNote:"Blackline Power adalah perkiraan dari data validator on-chain live: porsi slot leader validator Raiku per tahun milikmu.",
           note:"Skor = saldo-harian on-chain (saldo × hari dipegang; berhenti saat saldo nol). Hari Dipegang dimulai dari akuisisi rkuSOL pertama yang terdeteksi.",
           dl:"Unduh kartu (PNG)", solscan:"Lihat di Solscan", none:"Belum ada rkuSOL",
           hist:"Menyusun ulang riwayat kepemilikan dari transaksi lampau…", rankp:"Mengurutkan dompet ini di antara semua holder…",
@@ -7883,6 +7901,7 @@
         document.getElementById("hcBalLab").textContent = c.bal;
         document.getElementById("hcDaysLab").textContent = c.days;
         document.getElementById("hcScoreLab").textContent = c.score;
+        document.getElementById("hcBlackLab").textContent = c.black || CARD_I18N.en.black;
         document.getElementById("hcScoreNote").textContent = c.note;
         document.getElementById("hcDownload").textContent = c.dl;
         document.getElementById("hcSolscan").textContent = c.solscan;
@@ -8251,6 +8270,8 @@
         document.getElementById("hcBal").textContent = nf({ minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(lw.rku);
         document.getElementById("hcDays").textContent = fmtInt(lw.days || 0);
         document.getElementById("hcScore").textContent = typeof lw.score === "number" ? fmtInt(Math.round(lw.score)) : "—";
+        var bl = blacklinePower(lw.rku);
+        document.getElementById("hcBlack").textContent = bl !== null ? "+" + nf({ minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(bl) : "—";
         buildAvatar(lw.addr, tier);
         var ex = document.getElementById("hcSolscan");
         ex.href = "https://solscan.io/account/" + lw.addr;
@@ -8260,6 +8281,7 @@
           ? c.rankNote + (lw.rankAsOf ? " " + fmtLocalTime(lw.rankAsOf) : "")
           : (c.rankBalNote || CARD_I18N.en.rankBalNote || c.rankNote);
         var parts = [rankNote, c.comm];
+        if (bl !== null) parts.push(c.blackNote || CARD_I18N.en.blackNote);
         if (lw.approx) parts.unshift(c.partial);
         meta.textContent = parts.join(" ");
         meta.hidden = false;
@@ -8390,13 +8412,19 @@
         g.fillText("rkuSOL", 832, 326);
         g.strokeStyle = "rgba(34,61,14,0.18)"; g.lineWidth = 1;
         g.beginPath(); g.moveTo(56, 400); g.lineTo(1184, 400); g.stroke();
-        g.beginPath(); g.moveTo(632, 400); g.lineTo(632, 530); g.stroke();
+        g.beginPath(); g.moveTo(430, 400); g.lineTo(430, 530); g.stroke();
+        g.beginPath(); g.moveTo(812, 400); g.lineTo(812, 530); g.stroke();
         g.fillStyle = "rgba(34,61,14,0.55)"; g.font = "400 19px system-ui, sans-serif";
         g.fillText(c.days, 56, 444);
-        g.fillText(c.score, 658, 444);
+        g.fillText(c.score, 454, 444);
+        g.fillText(c.black || "BLACKLINE POWER", 836, 444);
         g.fillStyle = "#223D0E"; g.font = "800 46px system-ui, monospace";
         g.fillText(fmtInt(lw.days || 0), 56, 502);
-        g.fillText(typeof lw.score === "number" ? fmtInt(Math.round(lw.score)) : "—", 658, 502);
+        g.fillText(typeof lw.score === "number" ? fmtInt(Math.round(lw.score)) : "—", 454, 502);
+        var blv = blacklinePower(lw.rku);
+        g.fillText(blv !== null ? "+" + nf({ minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(blv) : "—", 836, 502);
+        g.fillStyle = "rgba(34,61,14,0.7)"; g.font = "400 21px system-ui, sans-serif";
+        g.fillText("Slots/yr", 836, 540);
         g.fillStyle = "rgba(34,61,14,0.55)"; g.font = "400 20px system-ui, sans-serif";
         var note = c.note;
         if (note.length > 92) note = note.slice(0, 92) + "…";
@@ -8571,6 +8599,7 @@
             if (!j) return;
             if (typeof j.solUSD === "number" && j.solUSD > 0) SNAP.solUSD = j.solUSD;
             if (typeof j.stakedSOL === "number" && j.stakedSOL > 0) SNAP.stakedSOL = j.stakedSOL;
+            if (j.validator && typeof j.validator === "object") SNAP.validator = j.validator;
             if (Array.isArray(j.series) && j.series.length) {
               TVL = j.series;
               SNAP.tvlUSD = j.series[j.series.length - 1][1];
@@ -8584,7 +8613,7 @@
             liveState.at = Date.now();
             renderNumbers();
             updateBadges();
-            if (typeof lastWallet !== "undefined" && lastWallet) renderWalletResult();
+            if (typeof lastWallet !== "undefined" && lastWallet) { renderWalletResult(); renderCard(); }
           }).catch(function () {});
         rpcCall("getTokenSupply", [RKU_MINT]).then(function (res) {
           if (res && res.value && typeof res.value.uiAmount === "number") {
