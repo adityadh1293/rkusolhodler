@@ -9035,9 +9035,9 @@
           .then(function (r) { return r.json(); })
           .then(function (rows) {
             if (!Array.isArray(rows)) return;
-            var sol = rows.find(function (x) { return x && x.liquidityToken === "SOL" && typeof x.borrowApy === "number" && x.borrowApy > 0; });
+            var sol = rows.find(function (x) { return x && x.liquidityToken === "SOL" && parseFloat(x.borrowApy) > 0; });
             var bor = document.getElementById("loopBorApy");
-            if (sol && bor) { bor.value = (sol.borrowApy * 100).toFixed(2); updateLoopCalc(); }
+            if (sol && bor) { bor.value = (parseFloat(sol.borrowApy) * 100).toFixed(2); updateLoopCalc(); }
           })
           .catch(function () {});
         ["loopCap", "loopLstApy", "loopBorApy", "loopLev"].forEach(function (id) {
