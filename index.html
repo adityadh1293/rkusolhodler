@@ -248,6 +248,20 @@
       .wstatus.err { color: var(--down); }
       .wresults { margin-top: 18px; }
       .wresults[hidden] { display: none; }
+      .feed-table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 14px; }
+      .feed-table th { text-align: left; font-size: 11px; text-transform: uppercase; color: var(--ink-70); padding: 8px 10px 8px 0; border-bottom: 1px solid var(--ink-18); font-weight: 600; font-family: "Geist Mono", ui-monospace, monospace; }
+      .feed-table td { padding: 9px 10px 9px 0; border-bottom: 1px solid var(--ink-18); vertical-align: middle; }
+      .feed-table td.mono { font-family: "Geist Mono", ui-monospace, monospace; }
+      .feed-badge { font-size: 11px; padding: 2px 8px; border: 1px solid var(--ink-18); border-radius: 999px; font-family: "Geist Mono", ui-monospace, monospace; white-space: nowrap; }
+      .feed-badge.stake { background: var(--ink); color: var(--paper); }
+      .feed-status { color: var(--ink-55); font-size: 13px; margin-top: 10px; }
+      .loop-grid { display: grid; gap: 12px; grid-template-columns: 1fr; margin-top: 20px; }
+      @media (min-width: 760px) { .loop-grid { grid-template-columns: repeat(4, 1fr); align-items: end; } }
+      .loop-grid label { display: block; font-size: 11px; text-transform: uppercase; color: var(--ink-70); margin-bottom: 6px; font-family: "Geist Mono", ui-monospace, monospace; letter-spacing: 0.05em; }
+      .loop-grid input { width: 100%; min-height: 44px; padding: 8px 10px; background: var(--field); border: 1px solid var(--ink-35); border-radius: 4px; font-family: "Geist Mono", ui-monospace, monospace; font-size: 14px; }
+      .loop-grid input[type="range"] { padding: 0; }
+      .spread-badge { display: inline-block; font-size: 12px; padding: 4px 10px; border: 1px solid var(--ink-18); border-radius: 999px; margin-top: 14px; font-family: "Geist Mono", ui-monospace, monospace; }
+      .warn-box { border: 1px solid var(--ink-18); padding: 12px 14px; margin-top: 12px; font-size: 14px; }
       .wmeta { margin-top: 14px; font-size: 13.5px; color: var(--ink-55);
         display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; }
       .wmeta[hidden] { display: none; }
@@ -611,6 +625,7 @@
           <div class="hc-actions">
             <button type="button" class="hc-btn primary" id="hcDownload">Download card (PNG)</button>
             <a class="hc-btn" id="hcSolscan" href="#" target="_blank" rel="noopener noreferrer">View on Solscan</a>
+            <a class="hc-btn" id="hcShare" href="#" target="_blank" rel="noopener noreferrer">Share on X</a>
           </div>
         </div>
         <p class="hc-meta" id="hcMeta" hidden></p>
@@ -635,6 +650,24 @@
           <div class="cell" role="listitem">
             <p class="lab mono" data-wi18n="resShare">Share of supply</p>
             <div class="val" id="wShare">—</div>
+          </div>
+          <div class="cell" role="listitem">
+            <p class="lab mono" data-wi18n="resSpl">SPL tokens held</p>
+            <div class="val" id="wSpl">—</div>
+          </div>
+          <div class="cell" role="listitem">
+            <p class="lab mono" data-wi18n="resLast">Last active</p>
+            <div class="val" id="wLast">—</div>
+          </div>
+          <div class="cell" role="listitem">
+            <p class="lab mono" data-wi18n="resYield">Est. annual yield</p>
+            <div class="val" id="wYield">—</div>
+            <p class="sub" data-wi18n="yieldSub">Estimate at the snapshot APY above, on the SOL value staked.</p>
+          </div>
+          <div class="cell" role="listitem">
+            <p class="lab mono" data-wi18n="resBorrow">Borrow power (75% LTV)</p>
+            <div class="val" id="wBorrow">—</div>
+            <p class="sub" data-wi18n="borrowSub">Estimate: position value × 75% max LTV, before any market's own limits.</p>
           </div>
           <div class="cell" role="listitem">
             <p class="lab mono" data-wi18n="resPoints">Holder points</p>
@@ -669,6 +702,132 @@
           </div>
           <div class="ath-track"><div class="ath-fill" id="athFill" style="width:55.6%"></div></div>
         </div>
+      </section>
+
+      <section aria-labelledby="stakesH">
+        <div class="sec-head">
+          <h2 id="stakesH" data-i18n="stakesTitle">Latest rkuSOL stakes</h2>
+          <span class="mono" data-i18n="stakesTag">Live · On-chain</span>
+        </div>
+        <p class="sec-intro" data-i18n="stakesIntro">The most recent rkuSOL stake, unstake and transfer activity, read live from the mint account's transactions on Solana mainnet.</p>
+        <table class="feed-table">
+          <thead>
+            <tr>
+              <th data-i18n="stakesColType">Type</th>
+              <th data-i18n="stakesColAmt">Amount</th>
+              <th data-i18n="stakesColWallet">Wallet</th>
+              <th data-i18n="stakesColTime">Time</th>
+              <th data-i18n="stakesColTx">Tx</th>
+            </tr>
+          </thead>
+          <tbody id="stakesBody"></tbody>
+        </table>
+        <p class="feed-status" id="stakesStatus" role="status" aria-live="polite"></p>
+      </section>
+
+      <section aria-labelledby="valH">
+        <div class="sec-head">
+          <h2 id="valH" data-i18n="valTitle">Raiku validator blocks</h2>
+          <span class="mono" data-i18n="valTag">Live · On-chain</span>
+        </div>
+        <p class="sec-intro" data-i18n="valIntro">The Raiku validator's block production this epoch and its most recently produced blocks, read live from Solana RPC.</p>
+        <div class="ledger" role="list">
+          <div class="cell" role="listitem">
+            <p class="lab mono" data-i18n="valEpoch">Epoch</p>
+            <div class="val" id="valEpoch">—</div>
+          </div>
+          <div class="cell" role="listitem">
+            <p class="lab mono" data-i18n="valLeader">Leader slots so far</p>
+            <div class="val" id="valLeader">—</div>
+          </div>
+          <div class="cell" role="listitem">
+            <p class="lab mono" data-i18n="valBlocks">Blocks produced</p>
+            <div class="val" id="valBlocks">—</div>
+          </div>
+          <div class="cell" role="listitem">
+            <p class="lab mono" data-i18n="valSkip">Skip rate</p>
+            <div class="val" id="valSkip">—</div>
+          </div>
+          <div class="cell" role="listitem">
+            <p class="lab mono" data-i18n="valAvgFee">Avg fee reward (scanned)</p>
+            <div class="val" id="valAvgFee">—</div>
+          </div>
+          <div class="cell" role="listitem">
+            <p class="lab mono" data-i18n="valAvgTx">Avg txs / block</p>
+            <div class="val" id="valAvgTx">—</div>
+          </div>
+        </div>
+        <table class="feed-table">
+          <thead>
+            <tr>
+              <th data-i18n="valColSlot">Slot</th>
+              <th data-i18n="valColTime">Time (UTC)</th>
+              <th data-i18n="valColTx">Txs</th>
+              <th data-i18n="valColFee">Fee reward</th>
+              <th data-i18n="valColLink">Explorer</th>
+            </tr>
+          </thead>
+          <tbody id="blocksBody"></tbody>
+        </table>
+        <p class="feed-status" id="valStatus" role="status" aria-live="polite"></p>
+      </section>
+
+      <section aria-labelledby="loopH">
+        <div class="sec-head">
+          <h2 id="loopH" data-i18n="loopTitle">rkuSOL loop calculator</h2>
+          <span class="mono" data-i18n="loopTag">Estimate · Your inputs</span>
+        </div>
+        <p class="sec-intro" data-i18n="loopIntro">Estimate a leveraged rkuSOL loop (stake, borrow SOL against it, stake again) from your own assumptions. Every number below is computed from the inputs you set — it is a calculator, not a promise of returns.</p>
+        <div class="loop-grid">
+          <div>
+            <label for="loopCap" data-i18n="loopCap">Initial capital (SOL)</label>
+            <input id="loopCap" type="number" min="0" step="any" value="100" />
+          </div>
+          <div>
+            <label for="loopLstApy" data-i18n="loopLst">rkuSOL staking APY (%)</label>
+            <input id="loopLstApy" type="number" min="0" step="any" value="4.90" />
+          </div>
+          <div>
+            <label for="loopBorApy" data-i18n="loopBor">SOL borrow APY (%)</label>
+            <input id="loopBorApy" type="number" min="0" step="any" value="5.2" />
+          </div>
+          <div>
+            <label for="loopLev"><span data-i18n="loopLev">Leverage (multiply)</span> <span class="mono" id="loopLevVal">2.5×</span> · LTV <span class="mono" id="loopLtvVal">60.0%</span></label>
+            <input id="loopLev" type="range" min="1" max="4" step="0.1" value="2.5" />
+          </div>
+        </div>
+        <span class="spread-badge" id="spreadBadge">—</span>
+        <div class="warn-box" id="loopWarn" hidden data-i18n="loopWarn">Negative spread: the borrow APY is above the staking APY, so looping loses money at these inputs.</div>
+        <div class="ledger" role="list">
+          <div class="cell" role="listitem">
+            <p class="lab mono" data-i18n="loopNet">Net looped APY</p>
+            <div class="val" id="loopNet">—</div>
+          </div>
+          <div class="cell" role="listitem">
+            <p class="lab mono" data-i18n="loopYearly">Est. yearly profit</p>
+            <div class="val" id="loopYearly">—</div>
+            <p class="sub" id="loopYearlyUsd"></p>
+          </div>
+          <div class="cell" role="listitem">
+            <p class="lab mono" data-i18n="loopBuffer">Depeg buffer</p>
+            <div class="val" id="loopBuffer">—</div>
+            <p class="sub" data-i18n="loopBufferSub">at 80% liquidation LTV</p>
+          </div>
+          <div class="cell" role="listitem">
+            <p class="lab mono" data-i18n="loopCol">Total collateral</p>
+            <div class="val" id="loopCol">—</div>
+          </div>
+          <div class="cell" role="listitem">
+            <p class="lab mono" data-i18n="loopDebt">Borrowed debt</p>
+            <div class="val" id="loopDebt">—</div>
+          </div>
+          <div class="cell" role="listitem">
+            <p class="lab mono" data-i18n="loopGross">Gross yield / yr</p>
+            <div class="val" id="loopGross">—</div>
+            <p class="sub"><span data-i18n="loopCost">Borrow cost / yr</span> <span id="loopCost">—</span></p>
+          </div>
+        </div>
+        <p class="feed-status" data-i18n="loopNote">Defaults: staking APY is the Sanctum snapshot shown above; borrow APY is an editable assumption — set it from the lending market you would actually use (e.g. Kamino). Leverage multiplies losses as well as gains and can be liquidated if rkuSOL depegs or rates move.</p>
       </section>
 
       <section aria-labelledby="aboutH">
@@ -914,7 +1073,25 @@
           srcBrand:"This page's colours and type follow Raiku's official brand kit: Paper, Ink and Geist.",
           footerLeft:"Community-made website — not official, not affiliated with Raiku.",
           chartAria:"Line chart of rkuSOL total value locked in US dollars",
-          statScore:"Total holder score", statScoreSub:"Every holder's balance-days combined (1 rkuSOL = 1 point per day), from on-chain supply history. Grows live.", liveBadge:"Live"
+          statScore:"Total holder score", statScoreSub:"Every holder's balance-days combined (1 rkuSOL = 1 point per day), from on-chain supply history. Grows live.", liveBadge:"Live",
+          stakesTitle:"Latest rkuSOL stakes", stakesTag:"Live · On-chain",
+          stakesIntro:"The most recent rkuSOL stake, unstake and transfer activity, read live from the mint account's transactions on Solana mainnet.",
+          stakesColType:"Type", stakesColAmt:"Amount", stakesColWallet:"Wallet", stakesColTime:"Time", stakesColTx:"Tx",
+          stakesLoading:"Scanning recent rkuSOL transactions…", stakesEmpty:"No recent activity found.",
+          valTitle:"Raiku validator blocks", valTag:"Live · On-chain",
+          valIntro:"The Raiku validator's block production this epoch and its most recently produced blocks, read live from Solana RPC.",
+          valEpoch:"Epoch", valLeader:"Leader slots so far", valBlocks:"Blocks produced", valSkip:"Skip rate",
+          valAvgFee:"Avg fee reward (scanned)", valAvgTx:"Avg txs / block",
+          valColSlot:"Slot", valColTime:"Time (UTC)", valColTx:"Txs", valColFee:"Fee reward", valColLink:"Explorer",
+          valLoading:"Scanning Raiku's latest blocks…", valEmpty:"No completed Raiku slots yet this epoch.",
+          loopTitle:"rkuSOL loop calculator", loopTag:"Estimate · Your inputs",
+          loopIntro:"Estimate a leveraged rkuSOL loop (stake, borrow SOL against it, stake again) from your own assumptions. Every number below is computed from the inputs you set — it is a calculator, not a promise of returns.",
+          loopCap:"Initial capital (SOL)", loopLst:"rkuSOL staking APY (%)", loopBor:"SOL borrow APY (%)", loopLev:"Leverage (multiply)",
+          loopNet:"Net looped APY", loopYearly:"Est. yearly profit", loopBuffer:"Depeg buffer", loopBufferSub:"at 80% liquidation LTV",
+          loopCol:"Total collateral", loopDebt:"Borrowed debt", loopGross:"Gross yield / yr", loopCost:"Borrow cost / yr",
+          loopSpreadPos:"Positive spread", loopSpreadNeg:"Negative spread",
+          loopWarn:"Negative spread: the borrow APY is above the staking APY, so looping loses money at these inputs.",
+          loopNote:"Defaults: staking APY is the Sanctum snapshot shown above; borrow APY is an editable assumption — set it from the lending market you would actually use (e.g. Kamino). Leverage multiplies losses as well as gains and can be liquidated if rkuSOL depegs or rates move."
         },
         id: {
           snapBadge:"Cuplikan · 25 Nov 2026", footerSnap:"CUPLIKAN · 25 NOV 2026 · 23:36 WIB (UTC+7)",
@@ -963,7 +1140,25 @@
           srcBrand:"Warna dan huruf halaman ini mengikuti brand kit resmi Raiku: Paper, Ink, dan Geist.",
           footerLeft:"Website buatan komunitas — bukan resmi, tidak berafiliasi dengan Raiku.",
           chartAria:"Grafik garis total nilai terkunci rkuSOL dalam dolar AS",
-          statScore:"Total skor holder", statScoreSub:"Gabungan saldo-harian semua holder (1 rkuSOL = 1 poin per hari), dari riwayat suplai on-chain. Bertambah live.", liveBadge:"Live"
+          statScore:"Total skor holder", statScoreSub:"Gabungan saldo-harian semua holder (1 rkuSOL = 1 poin per hari), dari riwayat suplai on-chain. Bertambah live.", liveBadge:"Live",
+          stakesTitle:"Stake rkuSOL terbaru", stakesTag:"Live · On-chain",
+          stakesIntro:"Aktivitas stake, unstake, dan transfer rkuSOL paling baru, dibaca live dari transaksi akun mint di Solana mainnet.",
+          stakesColType:"Tipe", stakesColAmt:"Jumlah", stakesColWallet:"Dompet", stakesColTime:"Waktu", stakesColTx:"Tx",
+          stakesLoading:"Memindai transaksi rkuSOL terbaru…", stakesEmpty:"Tidak ada aktivitas terbaru ditemukan.",
+          valTitle:"Blok validator Raiku", valTag:"Live · On-chain",
+          valIntro:"Produksi blok validator Raiku pada epoch ini dan blok-blok terakhir yang diproduksinya, dibaca live dari RPC Solana.",
+          valEpoch:"Epoch", valLeader:"Slot leader sejauh ini", valBlocks:"Blok diproduksi", valSkip:"Tingkat skip",
+          valAvgFee:"Rata-rata fee reward (dipindai)", valAvgTx:"Rata-rata tx / blok",
+          valColSlot:"Slot", valColTime:"Waktu (UTC)", valColTx:"Tx", valColFee:"Fee reward", valColLink:"Explorer",
+          valLoading:"Memindai blok terakhir Raiku…", valEmpty:"Belum ada slot Raiku yang selesai pada epoch ini.",
+          loopTitle:"Kalkulator loop rkuSOL", loopTag:"Perkiraan · Inputmu",
+          loopIntro:"Perkirakan loop rkuSOL berleverage (stake, pinjam SOL dengan jaminannya, stake lagi) dari asumsimu sendiri. Semua angka di bawah dihitung dari input yang kamu tetapkan — ini kalkulator, bukan janji imbal hasil.",
+          loopCap:"Modal awal (SOL)", loopLst:"APY staking rkuSOL (%)", loopBor:"APY pinjam SOL (%)", loopLev:"Leverage (multiply)",
+          loopNet:"APY loop bersih", loopYearly:"Perkiraan profit tahunan", loopBuffer:"Buffer depeg", loopBufferSub:"pada LTV likuidasi 80%",
+          loopCol:"Total kolateral", loopDebt:"Utang pinjaman", loopGross:"Yield kotor / thn", loopCost:"Biaya pinjam / thn",
+          loopSpreadPos:"Spread positif", loopSpreadNeg:"Spread negatif",
+          loopWarn:"Spread negatif: APY pinjam di atas APY staking, jadi looping merugi pada input ini.",
+          loopNote:"Default: APY staking adalah snapshot Sanctum di atas; APY pinjam adalah asumsi yang bisa diubah — tetapkan dari pasar pinjaman yang benar-benar akan kamu pakai (mis. Kamino). Leverage melipatgandakan kerugian juga dan bisa terlikuidasi bila rkuSOL depeg atau suku bunga bergerak."
         },
         hi: {
           snapBadge:"स्नैपशॉट · 25 नवंबर 2026", footerSnap:"स्नैपशॉट · 25 नवंबर 2026 · 23:36 WIB (UTC+7)",
@@ -5631,6 +5826,7 @@
         renderNumbers();
         renderChart();
         applyWalletLang();
+        if (document.getElementById("loopCap")) updateLoopCalc();
       }
 
       document.getElementById("langSel").addEventListener("change", function () { applyLang(this.value); });
@@ -5683,7 +5879,7 @@
         en: { walletTitle:"Check a wallet", walletTag:"Solana · On-chain lookup",
           walletIntro:"Paste any Solana wallet address to read its rkuSOL position straight from the chain: total tokens held, the SOL those tokens represent, and the wallet's share of the total supply. Balances are fetched live from a public Solana RPC the moment you check.",
           walletLabel:"Solana wallet address", walletPlaceholder:"Paste a Solana address…", checkBtn:"Check wallet", checking:"Reading the chain…",
-          resRku:"rkuSOL held", resSol:"SOL balance", resStake:"Stake value", resUsd:"Value", resShare:"Share of supply", resPoints:"Holder points",
+          resRku:"rkuSOL held", resSol:"SOL balance", resStake:"Stake value", resUsd:"Value", resShare:"Share of supply", resPoints:"Holder points", resSpl:"SPL tokens held", resLast:"Last active", resYield:"Est. annual yield", yieldSub:"Estimate at the snapshot APY above, on the SOL value staked.", resBorrow:"Borrow power (75% LTV)", borrowSub:"Estimate: position value × 75% max LTV, before any market's own limits.",
           pointsNone:"None published — Raiku runs no official points programme, so no points balance exists on-chain.",
           invalidAddr:"That doesn't look like a valid Solana address. Please check it and try again.",
           lookupFail:"The lookup failed — the public Solana RPC did not answer. Please try again in a moment.",
@@ -5691,7 +5887,7 @@
         id: { walletTitle:"Cek dompet", walletTag:"Solana · Pencarian on-chain",
           walletIntro:"Tempel alamat dompet Solana mana pun untuk membaca posisi rkuSOL-nya langsung dari chain: total token yang dipegang, berapa SOL yang diwakili token itu, dan porsi dompet tersebut dari total suplai. Saldo diambil live dari RPC publik Solana saat kamu mengecek.",
           walletLabel:"Alamat dompet Solana", walletPlaceholder:"Tempel alamat Solana…", checkBtn:"Cek dompet", checking:"Membaca chain…",
-          resRku:"rkuSOL yang dipegang", resSol:"Saldo SOL", resStake:"Nilai stake", resUsd:"Nilai", resShare:"Porsi dari suplai", resPoints:"Poin holder",
+          resRku:"rkuSOL yang dipegang", resSol:"Saldo SOL", resStake:"Nilai stake", resUsd:"Nilai", resShare:"Porsi dari suplai", resPoints:"Poin holder", resSpl:"Token SPL dipegang", resLast:"Aktivitas terakhir", resYield:"Estimasi yield tahunan", yieldSub:"Perkiraan pada APY snapshot di atas, dari nilai SOL yang di-stake.", resBorrow:"Daya pinjam (LTV 75%)", borrowSub:"Perkiraan: nilai posisi × LTV maksimum 75%, sebelum batas tiap pasar.",
           pointsNone:"Tidak ada yang diterbitkan — Raiku tidak menjalankan program poin resmi, jadi tidak ada saldo poin di chain.",
           invalidAddr:"Alamat itu sepertinya bukan alamat Solana yang valid. Periksa lagi lalu coba kembali.",
           lookupFail:"Pencarian gagal — RPC publik Solana tidak menjawab. Coba lagi sebentar lagi.",
@@ -6864,7 +7060,7 @@
           sadCta:"Don't leave Ryku sad — stake your SOL for rkuSOL and join the holders.", sub:"rkuSOL Holder Card", rank:"leaderboard rank", bal:"RKUSOL BALANCE", days:"DAYS HELD", score:"SCORE", black:"BLACKLINE POWER",
           blackNote:"Blackline Power is an estimate from live on-chain validator data: your share of the Raiku validator's leader slots per year.",
           note:"Score = on-chain balance-days (balance × days held; it stops while the balance is zero). Days Held starts at first detected rkuSOL acquisition.",
-          dl:"Download card (PNG)", solscan:"View on Solscan", none:"No rkuSOL yet",
+          dl:"Download card (PNG)", solscan:"View on Solscan", share:"Share on X", none:"No rkuSOL yet",
           hist:"Reconstructing holding history from past transactions…", rankp:"Ranking this wallet against all holders…",
           rankNote:"Rank is by holder score (balance-days), from the leaderboard updated",
           rankBalNote:"Rank is by current rkuSOL balance across every holder, read live from the chain (score leaderboard unavailable).",
@@ -6874,7 +7070,7 @@
           sadCta:"Jangan biarkan Ryku sedih — stake SOL-mu jadi rkuSOL dan bergabunglah dengan para holder.", sub:"rkuSOL Holder Card", rank:"peringkat leaderboard", bal:"SALDO RKUSOL", days:"HARI DIPEGANG", score:"SKOR", black:"BLACKLINE POWER",
           blackNote:"Blackline Power adalah perkiraan dari data validator on-chain live: porsi slot leader validator Raiku per tahun milikmu.",
           note:"Skor = saldo-harian on-chain (saldo × hari dipegang; berhenti saat saldo nol). Hari Dipegang dimulai dari akuisisi rkuSOL pertama yang terdeteksi.",
-          dl:"Unduh kartu (PNG)", solscan:"Lihat di Solscan", none:"Belum ada rkuSOL",
+          dl:"Unduh kartu (PNG)", solscan:"Lihat di Solscan", share:"Bagikan di X", none:"Belum ada rkuSOL",
           hist:"Menyusun ulang riwayat kepemilikan dari transaksi lampau…", rankp:"Mengurutkan dompet ini di antara semua holder…",
           rankNote:"Peringkat berdasarkan skor holder (saldo-harian), dari leaderboard yang diperbarui",
           rankBalNote:"Peringkat berdasarkan saldo rkuSOL saat ini di antara semua holder, dibaca live dari chain (leaderboard skor tidak tersedia).",
@@ -8276,6 +8472,17 @@
         var ex = document.getElementById("hcSolscan");
         ex.href = "https://solscan.io/account/" + lw.addr;
         ex.textContent = c.solscan;
+        var sh = document.getElementById("hcShare");
+        if (sh) {
+          var shareTxt = "Holding " + nf({ minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(lw.rku) + " rkuSOL" +
+            (tier ? " (" + tier + ")" : "") +
+            (lw.rank ? " · rank #" + lw.rank : "") +
+            (typeof lw.score === "number" ? " · score " + fmtInt(Math.round(lw.score)) : "") +
+            (bl !== null ? " · +" + nf({ minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(bl) + " Blackline slots/yr" : "") +
+            ". Checked live on rkusolhodler.vercel.app @raikucom";
+          sh.href = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(shareTxt);
+          sh.textContent = c.share || CARD_I18N.en.share;
+        }
         var meta = document.getElementById("hcMeta");
         var rankNote = lw.rankByScore
           ? c.rankNote + (lw.rankAsOf ? " " + fmtLocalTime(lw.rankAsOf) : "")
@@ -8316,12 +8523,41 @@
         document.getElementById("wUsd").textContent = "$" + nf({ minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(lastWallet.rku * price);
         var share = SNAP.supply > 0 ? lastWallet.rku / SNAP.supply * 100 : 0;
         document.getElementById("wShare").textContent = nf({ minimumFractionDigits: share > 0 && share < 0.01 ? 4 : 2, maximumFractionDigits: share > 0 && share < 0.01 ? 4 : 2 }).format(share) + "%";
+        document.getElementById("wSpl").textContent = typeof lastWallet.splCount === "number" ? fmtInt(lastWallet.splCount) : "—";
+        document.getElementById("wLast").textContent = lastWallet.lastActive ? timeAgo(lastWallet.lastActive) : "—";
+        document.getElementById("wYield").textContent = nf({ minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(stakeSOL * (SNAP.apy / 100)) + " SOL";
+        document.getElementById("wBorrow").textContent = "$" + nf({ minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(lastWallet.rku * price * 0.75);
         document.getElementById("wResults").hidden = false;
         document.getElementById("wMeta").hidden = false;
         document.getElementById("wChecked").textContent = w.checkedAt + " · " + lastWallet.when.toLocaleString(LOCALES[curLang] || "en-US");
         var ex = document.getElementById("wExplorer");
         ex.href = "https://solscan.io/account/" + lastWallet.addr;
         ex.textContent = w.viewExplorer;
+      }
+
+      /* Secondary wallet facts (SPL token count + last activity), fetched
+         after the main result so they never block it. */
+      function fetchWalletExtras(addr) {
+        rpcCall("getTokenAccountsByOwner", [addr, { programId: TOKEN_PROGRAM }, { encoding: "jsonParsed" }])
+          .catch(function () { return null; })
+          .then(function (splRes) {
+            if (lastWallet && lastWallet.addr === addr && splRes && Array.isArray(splRes.value)) {
+              var n = 0;
+              splRes.value.forEach(function (acc) {
+                try { if (tokenUiAmount(acc.account.data.parsed.info.tokenAmount) > 0) n++; } catch (e) {}
+              });
+              lastWallet.splCount = n;
+              renderWalletResult();
+            }
+            return rpcCall("getSignaturesForAddress", [addr, { limit: 1 }]).catch(function () { return null; });
+          })
+          .then(function (sigRes) {
+            if (lastWallet && lastWallet.addr === addr && Array.isArray(sigRes) && sigRes[0] && sigRes[0].blockTime) {
+              lastWallet.lastActive = sigRes[0].blockTime;
+              renderWalletResult();
+            }
+          })
+          .catch(function () {});
       }
 
       /* Card download: the PNG is drawn on a local canvas from the
@@ -8521,6 +8757,7 @@
                   };
                   renderWalletResult();
                   renderCard();
+                  fetchWalletExtras(addr);
                   status.textContent = hist.capped ? w.lookupFail : (hist.approx ? c.partial : "");
                   status.className = hist.capped ? "wstatus err" : "wstatus";
                 });
@@ -8614,6 +8851,7 @@
             renderNumbers();
             updateBadges();
             if (typeof lastWallet !== "undefined" && lastWallet) { renderWalletResult(); renderCard(); }
+            if (document.getElementById("loopCap")) updateLoopCalc();
           }).catch(function () {});
         rpcCall("getTokenSupply", [RKU_MINT]).then(function (res) {
           if (res && res.value && typeof res.value.uiAmount === "number") {
@@ -8641,10 +8879,148 @@
         }).catch(function () {});
       }
 
+      /* ——— Latest stakes feed, validator blocks, loop calculator ——— */
+      function timeAgo(ts) {
+        if (!ts) return "—";
+        var sec = Math.max(0, Math.floor(Date.now() / 1000 - ts));
+        if (sec < 60) return sec + "s ago";
+        var m = Math.floor(sec / 60);
+        if (m < 60) return m + "m ago";
+        var h = Math.floor(m / 60);
+        if (h < 24) return h + "h ago";
+        return Math.floor(h / 24) + "d ago";
+      }
+      function td(text, cls) {
+        var el = document.createElement("td");
+        if (cls) el.className = cls;
+        el.textContent = text;
+        return el;
+      }
+      function fetchStakes() {
+        var d = dict();
+        var status = document.getElementById("stakesStatus");
+        var body = document.getElementById("stakesBody");
+        if (!body) return;
+        if (!body.children.length) status.textContent = d.stakesLoading || I18N.en.stakesLoading;
+        fetch("/.netlify/functions/stakes")
+          .then(function (r) { return r.json(); })
+          .then(function (j) {
+            var rows = (j && Array.isArray(j.stakes)) ? j.stakes : [];
+            body.textContent = "";
+            if (!rows.length) { status.textContent = d.stakesEmpty || I18N.en.stakesEmpty; return; }
+            status.textContent = "";
+            rows.forEach(function (st) {
+              var tr = document.createElement("tr");
+              var typeTd = document.createElement("td");
+              var badge = document.createElement("span");
+              badge.className = "feed-badge" + (st.type === "STAKE" ? " stake" : "");
+              badge.textContent = st.type;
+              typeTd.appendChild(badge);
+              tr.appendChild(typeTd);
+              tr.appendChild(td(nf({ minimumFractionDigits: 2, maximumFractionDigits: 4 }).format(st.amount) + " rkuSOL", "mono"));
+              tr.appendChild(td(st.wallet ? maskAddr(st.wallet) : "—", "mono"));
+              tr.appendChild(td(timeAgo(st.blockTime)));
+              var txTd = document.createElement("td");
+              var a = document.createElement("a");
+              a.href = "https://solscan.io/tx/" + st.sig;
+              a.target = "_blank";
+              a.rel = "noopener noreferrer";
+              a.textContent = "Solscan ↗";
+              txTd.appendChild(a);
+              tr.appendChild(txTd);
+              body.appendChild(tr);
+            });
+          })
+          .catch(function () { status.textContent = d.stakesEmpty || I18N.en.stakesEmpty; });
+      }
+      function fetchValidator() {
+        var d = dict();
+        var status = document.getElementById("valStatus");
+        var body = document.getElementById("blocksBody");
+        if (!body) return;
+        if (!body.children.length) status.textContent = d.valLoading || I18N.en.valLoading;
+        fetch("/.netlify/functions/validator")
+          .then(function (r) { return r.json(); })
+          .then(function (j) {
+            if (!j || j.error) { status.textContent = d.valEmpty || I18N.en.valEmpty; return; }
+            document.getElementById("valEpoch").textContent = fmtInt(j.epoch || 0);
+            document.getElementById("valLeader").textContent = fmtInt(j.leaderSlotsDone || 0);
+            document.getElementById("valBlocks").textContent = fmtInt(j.blocksProduced || 0);
+            document.getElementById("valSkip").textContent = nf({ minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(j.skipRate || 0) + "%";
+            document.getElementById("valAvgFee").textContent = typeof j.avgFeeSOL === "number" ? nf({ minimumFractionDigits: 5, maximumFractionDigits: 5 }).format(j.avgFeeSOL) + " SOL" : "—";
+            document.getElementById("valAvgTx").textContent = typeof j.avgTxs === "number" ? fmtInt(j.avgTxs) : "—";
+            var rows = Array.isArray(j.recentBlocks) ? j.recentBlocks : [];
+            body.textContent = "";
+            if (!rows.length) { status.textContent = d.valEmpty || I18N.en.valEmpty; return; }
+            status.textContent = "";
+            rows.forEach(function (b) {
+              var tr = document.createElement("tr");
+              tr.appendChild(td("#" + fmtInt(b.slot), "mono"));
+              tr.appendChild(td(b.blockTime ? new Date(b.blockTime * 1000).toISOString().replace("T", " ").slice(11, 19) + " UTC" : "—"));
+              tr.appendChild(td(fmtInt(b.txCount), "mono"));
+              tr.appendChild(td(nf({ minimumFractionDigits: 5, maximumFractionDigits: 5 }).format(b.feeSOL) + " SOL", "mono"));
+              var linkTd = document.createElement("td");
+              var a = document.createElement("a");
+              a.href = "https://solscan.io/block/" + b.slot;
+              a.target = "_blank";
+              a.rel = "noopener noreferrer";
+              a.textContent = "Solscan ↗";
+              linkTd.appendChild(a);
+              tr.appendChild(linkTd);
+              body.appendChild(tr);
+            });
+          })
+          .catch(function () { status.textContent = d.valEmpty || I18N.en.valEmpty; });
+      }
+      function updateLoopCalc() {
+        var d = dict();
+        var cap = Math.max(0, parseFloat(document.getElementById("loopCap").value) || 0);
+        var lstApy = parseFloat(document.getElementById("loopLstApy").value) || 0;
+        var borApy = parseFloat(document.getElementById("loopBorApy").value) || 0;
+        var lev = parseFloat(document.getElementById("loopLev").value) || 1;
+        var totalCol = cap * lev;
+        var totalDebt = totalCol - cap;
+        var ltv = lev > 1 ? (totalDebt / totalCol) * 100 : 0;
+        var netApy = (lstApy * lev) - (borApy * (lev - 1));
+        var gross = totalCol * (lstApy / 100);
+        var cost = totalDebt * (borApy / 100);
+        var yearly = gross - cost;
+        var buffer = lev > 1 ? Math.max(0, (1 - (totalDebt / (totalCol * 0.80))) * 100) : null;
+        var f2 = { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+        document.getElementById("loopLevVal").textContent = nf({ minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(lev) + "×";
+        document.getElementById("loopLtvVal").textContent = nf({ minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(ltv) + "%";
+        document.getElementById("loopNet").textContent = nf(f2).format(netApy) + "%";
+        document.getElementById("loopYearly").textContent = nf(f2).format(yearly) + " SOL";
+        document.getElementById("loopYearlyUsd").textContent = SNAP.solUSD ? "~$" + nf(f2).format(yearly * SNAP.solUSD) + " / year" : "";
+        document.getElementById("loopBuffer").textContent = buffer === null ? "—" : nf({ minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(buffer) + "%";
+        document.getElementById("loopCol").textContent = nf(f2).format(totalCol) + " SOL";
+        document.getElementById("loopDebt").textContent = nf(f2).format(totalDebt) + " SOL";
+        document.getElementById("loopGross").textContent = "+" + nf(f2).format(gross) + " SOL";
+        document.getElementById("loopCost").textContent = "-" + nf(f2).format(cost) + " SOL";
+        var spread = lstApy - borApy;
+        var badge = document.getElementById("spreadBadge");
+        badge.textContent = (spread >= 0 ? (d.loopSpreadPos || I18N.en.loopSpreadPos) + ": +" : (d.loopSpreadNeg || I18N.en.loopSpreadNeg) + ": ") + nf(f2).format(spread) + "%";
+        document.getElementById("loopWarn").hidden = spread >= 0;
+      }
+      function initLoopCalc() {
+        var lst = document.getElementById("loopLstApy");
+        if (lst) lst.value = SNAP.apy.toFixed(2);
+        ["loopCap", "loopLstApy", "loopBorApy", "loopLev"].forEach(function (id) {
+          var el = document.getElementById(id);
+          if (el) el.addEventListener("input", updateLoopCalc);
+        });
+        updateLoopCalc();
+      }
+
       applyLang("en");
       fetchLive();
+      fetchStakes();
+      fetchValidator();
+      initLoopCalc();
       setInterval(renderScore, 5000);
       setInterval(fetchLive, 60000);
+      setInterval(fetchStakes, 60000);
+      setInterval(fetchValidator, 60000);
     </script>
   </body>
 </html>
