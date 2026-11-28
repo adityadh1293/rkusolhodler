@@ -4,6 +4,8 @@
 // first success wins. Stake pool: DefiLlama protocol API (TVL series + staked SOL,
 // read on-chain by their adapter).
 // Response: { at, solUSD, solSource, stakedSOL, tvlUSD, series: [[isoDate, usd], ...], validator: { stakeSOL, leaderSlots, epoch, slotsInEpoch } }
+import rl from "./_ratelimit.js";
+
 const SOL_MINT = "So11111111111111111111111111111111111111112";
 
 async function fetchJson(url, ms) {
@@ -84,6 +86,8 @@ async function validatorStats() {
 
 
 export default async function handler(req, res) {
+  const rate = await rl.checkRate(req, "price", 120);
+  if (!rate.ok) return rl.deny(res, rate.retryAfter);
   const out = { at: Date.now() };
   const [sol, proto, val] = await Promise.all([
     solPrice(),

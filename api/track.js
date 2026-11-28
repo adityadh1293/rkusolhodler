@@ -7,6 +7,8 @@
 // otherwise falls back to the free Abacus counter API so counts work
 // immediately with zero setup.
 
+const { checkRate, deny } = require("./_ratelimit.js");
+
 const ABACUS_NS = "rkusolhodler-stats-v1";
 
 function redisEnv() {
@@ -48,6 +50,8 @@ module.exports = async (req, res) => {
     res.end(JSON.stringify({ ok: false, error: "method" }));
     return;
   }
+  const rate = await checkRate(req, "track", 30);
+  if (!rate.ok) return deny(res, rate.retryAfter);
   let body = req.body;
   if (typeof body === "string") {
     try { body = JSON.parse(body); } catch (e) { body = null; }

@@ -6,6 +6,8 @@
 // Response: { at, epoch, leaderSlotsAssigned, leaderSlotsDone,
 //   blocksProduced, skipped, skipRate, avgFeeSOL, avgTxs,
 //   recentBlocks: [{ slot, blockTime, txCount, feeSOL }] }
+import rl from "./_ratelimit.js";
+
 const VALIDATOR_IDENTITY = "9xcXe4WRAfbVoVgQmFD5xgFHioL9dD7c74pQZ7PeczT";
 const RPC_UPSTREAMS = [
   "https://api.mainnet-beta.solana.com",
@@ -78,6 +80,8 @@ async function validatorData() {
 }
 
 export default async function handler(req, res) {
+  const rate = await rl.checkRate(req, "validator", 120);
+  if (!rate.ok) return rl.deny(res, rate.retryAfter);
   let out = null;
   try { out = await validatorData(); } catch (e) { out = null; }
   res.status(200);

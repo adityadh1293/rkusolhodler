@@ -4,6 +4,8 @@
 // balance change: positive = stake (mint), negative = unstake (burn),
 // zero-net with a gainer = transfer. Live on-chain data via public RPC.
 // Response: { at, stakes: [{ sig, type, amount, wallet, blockTime }] }
+import rl from "./_ratelimit.js";
+
 const RKU_MINT = "rkubjTrZYioRSeXwDnhwGQzvW3qkcin72JSxUt3WMVp";
 const RPC_UPSTREAMS = [
   "https://api.mainnet-beta.solana.com",
@@ -79,6 +81,8 @@ async function latestStakes() {
 }
 
 export default async function handler(req, res) {
+  const rate = await rl.checkRate(req, "stakes", 120);
+  if (!rate.ok) return rl.deny(res, rate.retryAfter);
   let stakes = null;
   try { stakes = await latestStakes(); } catch (e) { stakes = null; }
   res.status(200);

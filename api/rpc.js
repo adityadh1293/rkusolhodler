@@ -2,6 +2,8 @@
 // Same logic as netlify/functions/rpc.js: fixed allowlist of read-only methods,
 // 8 KB body cap, sequential fallback across public upstreams. Nothing is stored.
 
+import rl from "./_ratelimit.js";
+
 const UPSTREAMS = [
   "https://api.mainnet-beta.solana.com",
   "https://solana.api.onfinality.io/public",
@@ -75,6 +77,8 @@ export default async function handler(req, res) {
   if (req.method !== "POST") {
     return send(res, 405, { jsonrpc: "2.0", id: 1, error: { code: -32600, message: "POST only" } });
   }
+  const rate = await rl.checkRate(req, "rpc", 60);
+  if (!rate.ok) return rl.deny(res, rate.retryAfter);
   const raw = await readBody(req);
   if (raw === null) {
     return send(res, 413, { jsonrpc: "2.0", id: 1, error: { code: -32600, message: "Body too large" } });

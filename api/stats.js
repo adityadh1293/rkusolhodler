@@ -3,6 +3,8 @@
 // Storage: Upstash Redis via REST when configured (see api/track.js);
 // otherwise reads the free Abacus counter API fallback.
 
+const { checkRate, deny } = require("./_ratelimit.js");
+
 const ABACUS_NS = "rkusolhodler-stats-v1";
 
 function redisEnv() {
@@ -47,6 +49,8 @@ function num(v) {
 }
 
 module.exports = async (req, res) => {
+  const rate = await checkRate(req, "stats", 120);
+  if (!rate.ok) return deny(res, rate.retryAfter);
   res.setHeader("Content-Type", "application/json");
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Cache-Control", "public, max-age=30, s-maxage=30");
