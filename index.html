@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net data:; img-src 'self' data: blob:; connect-src 'self' https://api.mainnet-beta.solana.com https://solana.api.onfinality.io https://solana-rpc.publicnode.com https://solana-mainnet.g.alchemy.com https://api.kamino.finance https://sdk-proxy.sns.id; object-src 'none'; base-uri 'none'; form-action 'self'" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net data:; img-src 'self' data: blob: https://pbs.twimg.com; connect-src 'self' https://api.mainnet-beta.solana.com https://solana.api.onfinality.io https://solana-rpc.publicnode.com https://solana-mainnet.g.alchemy.com https://api.kamino.finance https://sdk-proxy.sns.id; object-src 'none'; base-uri 'none'; form-action 'self'" />
     <meta name="referrer" content="no-referrer" />
     <meta name="description" content="A public dashboard for Raiku's rkuSOL liquid staking: total SOL staked, TVL, holders, APY and TVL history, from public sources." />
     <meta property="og:title" content="rkuSOL Staking — Raiku Public Dashboard" />
@@ -438,6 +438,9 @@
       [data-theme="dark"] .bg-mark img { opacity: 0.08; filter: brightness(3.4) saturate(0.75); }
       @media (prefers-reduced-motion: reduce) { .bg-mark img { animation: none; } }
       .wrap { position: relative; z-index: 1; }
+      /* Optional X identity on the holder card */
+      .wform .xlab { display: block; margin-top: 12px; }
+      .hc-x { font-size: 15px; font-weight: 600; color: var(--ink-70, rgba(34,61,14,0.7)); margin-top: 2px; overflow-wrap: anywhere; }
     </style>
   </head>
   <body>
@@ -595,6 +598,8 @@
           <div>
             <label for="wAddr" data-wi18n="walletLabel">Solana wallet address or .sol name</label>
             <input id="wAddr" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="80" placeholder="Paste a Solana address or .sol name…" />
+            <label for="wX" class="xlab" data-wi18n="xLabel">X username (optional)</label>
+            <input id="wX" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="16" placeholder="@username" />
           </div>
           <button type="submit" class="add-btn" id="wBtn" data-wi18n="checkBtn">Check wallet</button>
         </form>
@@ -629,6 +634,7 @@
             <div class="hc-avatar" id="hcAvatar" aria-hidden="true"></div>
             <div class="hc-id">
               <div class="hc-user" id="hcUser">—</div>
+              <div class="hc-x" id="hcX" hidden></div>
               <div class="hc-tier" id="hcTier">—</div>
               <div class="hc-addr mono" id="hcAddr"></div>
             </div>
@@ -5912,7 +5918,7 @@
       var WI18N = {
         en: { walletTitle:"Check a wallet", walletTag:"Solana · On-chain lookup",
           walletIntro:"Paste any Solana wallet address — or a .sol name — to read its rkuSOL position straight from the chain: total tokens held, the SOL those tokens represent, and the wallet's share of the total supply. Balances are fetched live from a public Solana RPC the moment you check.",
-          walletLabel:"Solana wallet address or .sol name", walletPlaceholder:"Paste a Solana address or .sol name…", checkBtn:"Check wallet", checking:"Reading the chain…",
+          walletLabel:"Solana wallet address or .sol name", walletPlaceholder:"Paste a Solana address or .sol name…", xLabel:"X username (optional)", xPlaceholder:"@username", checkBtn:"Check wallet", checking:"Reading the chain…",
           resRku:"rkuSOL held", resSol:"SOL balance", resStake:"Stake value", resUsd:"Value", resShare:"Share of supply", resPoints:"Holder points", resSpl:"SPL tokens held", resLast:"Last active", resYield:"Est. annual yield", yieldSub:"Estimate at the snapshot APY above, on the SOL value staked.", resBorrow:"Borrow power (75% LTV)", borrowSub:"Estimate: position value × 75% max LTV, before any market's own limits.",
           pointsNone:"None published — Raiku runs no official points programme, so no points balance exists on-chain.",
           invalidAddr:"That doesn't look like a valid Solana address. Please check it and try again.",
@@ -5921,7 +5927,7 @@
           checkedAt:"Checked", viewExplorer:"View on Solscan" },
         id: { walletTitle:"Cek dompet", walletTag:"Solana · Pencarian on-chain",
           walletIntro:"Tempel alamat dompet Solana mana pun — atau nama .sol — untuk membaca posisi rkuSOL-nya langsung dari chain: total token yang dipegang, berapa SOL yang diwakili token itu, dan porsi dompet tersebut dari total suplai. Saldo diambil live dari RPC publik Solana saat kamu mengecek.",
-          walletLabel:"Alamat dompet Solana atau nama .sol", walletPlaceholder:"Tempel alamat Solana atau nama .sol…", checkBtn:"Cek dompet", checking:"Membaca chain…",
+          walletLabel:"Alamat dompet Solana atau nama .sol", walletPlaceholder:"Tempel alamat Solana atau nama .sol…", xLabel:"Username X (opsional)", xPlaceholder:"@username", checkBtn:"Cek dompet", checking:"Membaca chain…",
           resRku:"rkuSOL yang dipegang", resSol:"Saldo SOL", resStake:"Nilai stake", resUsd:"Nilai", resShare:"Porsi dari suplai", resPoints:"Poin holder", resSpl:"Token SPL dipegang", resLast:"Aktivitas terakhir", resYield:"Estimasi yield tahunan", yieldSub:"Perkiraan pada APY snapshot di atas, dari nilai SOL yang di-stake.", resBorrow:"Daya pinjam (LTV 75%)", borrowSub:"Perkiraan: nilai posisi × LTV maksimum 75%, sebelum batas tiap pasar.",
           pointsNone:"Tidak ada yang diterbitkan — Raiku tidak menjalankan program poin resmi, jadi tidak ada saldo poin di chain.",
           invalidAddr:"Alamat itu sepertinya bukan alamat Solana yang valid. Periksa lagi lalu coba kembali.",
@@ -8114,6 +8120,7 @@
       };
 
       var lastWallet = null;
+      var pendingXUser = "";
       var inFlight = false;
 
       function wdict() { return WI18N[curLang] || WI18N.en; }
@@ -8127,6 +8134,7 @@
           if (w[k]) els[i].textContent = w[k];
         }
         document.getElementById("wAddr").setAttribute("placeholder", w.walletPlaceholder);
+        document.getElementById("wX").setAttribute("placeholder", w.xPlaceholder || WI18N.en.xPlaceholder);
         var c = cdict();
         document.getElementById("hcSub").textContent = c.sub;
         document.getElementById("hcRankLab").textContent = c.rank;
@@ -8525,6 +8533,16 @@
       function buildAvatar(addr, tier) {
         var box = document.getElementById("hcAvatar");
         while (box.firstChild) box.removeChild(box.firstChild);
+        if (lastWallet && lastWallet.x && lastWallet.x.avatar) {
+          var ximg = document.createElement("img");
+          ximg.crossOrigin = "anonymous";
+          ximg.src = lastWallet.x.avatar;
+          ximg.alt = "";
+          ximg.width = 512; ximg.height = 512;
+          box.style.background = "";
+          box.appendChild(ximg);
+          return;
+        }
         var h = hashStr(addr);
         var src = tier ? (RYKU_POSES[tier] || RYKU_HODLER_POSES[h % RYKU_HODLER_POSES.length]) : "ryku-sad.webp";
         var img = document.createElement("img");
@@ -8541,7 +8559,9 @@
         var c = cdict();
         var lw = lastWallet;
         document.getElementById("hcRank").textContent = lw.rank ? "#" + fmtInt(lw.rank) : "—";
-        document.getElementById("hcUser").textContent = lw.sns || shortAddr(lw.addr);
+        document.getElementById("hcUser").textContent = lw.x ? lw.x.name : (lw.sns || shortAddr(lw.addr));
+        var hcX = document.getElementById("hcX");
+        if (hcX) { hcX.textContent = lw.x ? "@" + lw.x.username : ""; hcX.hidden = !lw.x; }
         var tier = tierFor(lw.rku);
         document.getElementById("hcTier").textContent = tier ? "rkuSOL " + tier : c.none;
         document.getElementById("hcAddr").textContent = maskAddr(lw.addr);
@@ -8557,6 +8577,7 @@
         var sh = document.getElementById("hcShare");
         if (sh) {
           var shareTxt = "Holding " + nf({ minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(lw.rku) + " rkuSOL" +
+            (lw.x ? " (@" + lw.x.username + ")" : "") +
             (tier ? " (" + tier + ")" : "") +
             (lw.rank ? " · rank #" + lw.rank : "") +
             (typeof lw.score === "number" ? " · score " + fmtInt(Math.round(lw.score)) : "") +
@@ -8615,6 +8636,22 @@
         var ex = document.getElementById("wExplorer");
         ex.href = "https://solscan.io/account/" + lastWallet.addr;
         ex.textContent = w.viewExplorer;
+      }
+
+      /* Optional X identity for the holder card: public profile lookup by
+         username only (via our own /xprofile endpoint). Cosmetic — it does
+         not prove the wallet belongs to that X account. Failures are silent
+         and the card simply keeps the Ryku avatar. */
+      function fetchXProfile(username) {
+        fetch("/.netlify/functions/xprofile?u=" + encodeURIComponent(username))
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (j) {
+            if (j && j.ok && lastWallet) {
+              lastWallet.x = { username: j.username, name: j.name, avatar: j.avatar };
+              renderCard();
+            }
+          })
+          .catch(function () {});
       }
 
       /* Secondary wallet facts (SPL token count + last activity), fetched
@@ -8690,7 +8727,7 @@
           var sc = Math.max(124 / iw, 124 / ih);
           var dw = iw * sc, dh = ih * sc;
           var dx = 66 + (124 - dw) / 2, dy = 206 + (124 - dh) / 2;
-          if (hashStr(lw.addr) % 2 === 0) {
+          if (!lw.x && hashStr(lw.addr) % 2 === 0) {
             g.translate(66 + 124, 0); g.scale(-1, 1);
             dx = 124 - (dx - 66) - dw;
           }
@@ -8713,18 +8750,25 @@
         g.strokeStyle = "rgba(34,61,14,0.35)"; g.lineWidth = 1;
         g.strokeRect(66, 206, 124, 124);
         g.fillStyle = "#223D0E";
-        var userTxt = lw.sns || shortAddr(lw.addr);
+        var userTxt = lw.x ? lw.x.name : (lw.sns || shortAddr(lw.addr));
         var ufs = 46;
         g.font = "700 " + ufs + "px system-ui, sans-serif";
         while (g.measureText(userTxt).width > 560 && ufs > 20) { ufs -= 2; g.font = "700 " + ufs + "px system-ui, sans-serif"; }
         g.fillText(userTxt, 226, 262);
+        var pillY = 280;
+        if (lw.x) {
+          g.fillStyle = "rgba(34,61,14,0.6)";
+          g.font = "600 22px system-ui, sans-serif";
+          g.fillText("@" + lw.x.username, 226, 292);
+          pillY = 304;
+        }
         var tier = tierFor(lw.rku);
         var tierTxt = tier ? "rkuSOL " + tier : c.none;
         g.font = "600 24px system-ui, sans-serif";
         var tw = g.measureText(tierTxt).width;
-        rr(226, 280, tw + 36, 42, 21); g.fillStyle = "#223D0E"; g.fill();
+        rr(226, pillY, tw + 36, 42, 21); g.fillStyle = "#223D0E"; g.fill();
         g.fillStyle = "#EFEEE9";
-        g.fillText(tierTxt, 244, 310);
+        g.fillText(tierTxt, 244, pillY + 30);
         rr(806, 196, 364, 150, 6); g.strokeStyle = "rgba(34,61,14,0.35)"; g.lineWidth = 1.5; g.stroke();
         g.fillStyle = "rgba(34,61,14,0.55)"; g.font = "400 19px system-ui, sans-serif";
         g.fillText(c.bal, 832, 234);
@@ -8837,6 +8881,7 @@
                   renderCard();
                   fetchWalletExtras(addr);
                   if (!snsName) fetchSnsName(addr);
+                  if (pendingXUser) fetchXProfile(pendingXUser);
                   status.textContent = hist.capped ? w.lookupFail : (hist.approx ? c.partial : "");
                   status.className = hist.capped ? "wstatus err" : "wstatus";
                 });
@@ -8858,6 +8903,7 @@
         var w = wdict();
         var status = document.getElementById("wStatus");
         var raw = document.getElementById("wAddr").value.trim();
+        pendingXUser = document.getElementById("wX").value.trim().replace(/^@/, "");
         var solMatch = /^(.+)\.sol$/i.exec(raw);
         if (solMatch) {
           var name = solMatch[1].trim().toLowerCase();
