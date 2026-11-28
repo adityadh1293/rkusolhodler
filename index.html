@@ -441,6 +441,33 @@
       /* Optional X identity on the holder card */
       .wform .xlab { display: block; margin-top: 12px; }
       .hc-x { font-size: 15px; font-weight: 600; color: var(--ink-70, rgba(34,61,14,0.7)); margin-top: 2px; overflow-wrap: anywhere; }
+      /* Holder leaderboard */
+      .lb-tools { margin-top: 16px; }
+      .lb-tools input { width: 100%; max-width: 420px; }
+      .lb-table { margin-top: 14px; border: 1px solid var(--ink-18); border-radius: 10px; overflow: hidden; }
+      .lb-row { display: grid; grid-template-columns: 64px 1fr 110px 130px; gap: 10px; align-items: center; padding: 9px 14px; border-top: 1px solid var(--ink-10); font-size: 14px; }
+      .lb-row:first-child { border-top: none; }
+      .lb-head { background: var(--ink-06); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-70); font-weight: 600; }
+      button.lb-row { width: 100%; text-align: left; background: none; border-left: none; border-right: none; border-bottom: none; cursor: pointer; color: inherit; font: inherit; }
+      button.lb-row:hover { background: var(--ink-06); }
+      .lb-c-rank { font-weight: 700; font-variant-numeric: tabular-nums; }
+      .lb-top .lb-c-rank { color: var(--chart); }
+      .lb-c-holder { overflow-wrap: anywhere; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+      .lb-tier { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 7px; border-radius: 999px; background: var(--ink-10); color: var(--ink-70); }
+      .lb-c-bal, .lb-c-score { text-align: right; font-variant-numeric: tabular-nums; }
+      .lb-c-score { font-weight: 700; }
+      .lb-empty { padding: 16px 14px; color: var(--ink-70); font-size: 14px; }
+      .lb-meta { font-size: 11px; color: var(--ink-55); margin-top: 10px; }
+      @media (max-width: 560px) { .lb-row { grid-template-columns: 48px 1fr 84px 96px; gap: 8px; padding: 8px 10px; font-size: 13px; } }
+      /* Score projection + watchlist */
+      .hc-proj { font-size: 13px; font-weight: 600; color: var(--chart); margin: 12px 0 0; }
+      .watchlist { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+      .wl-lab { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-70); }
+      .wl-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+      .wl-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 6px 5px 12px; border: 1px solid var(--ink-18); border-radius: 999px; background: var(--field); font-size: 13px; }
+      .wl-chip button { border: none; background: none; cursor: pointer; color: inherit; font: inherit; padding: 0; }
+      .wl-chip .wl-go { font-weight: 600; }
+      .wl-chip .wl-x { color: var(--ink-55); font-size: 15px; line-height: 1; padding: 0 4px; }
     </style>
   </head>
   <body>
@@ -530,6 +557,7 @@
         <ul>
           <li><a href="#top" data-i18n="navStats">Stats</a></li>
           <li><a href="#walletH" data-i18n="navWallet">Check wallet</a></li>
+          <li><a href="#lbH" data-i18n="navLeaderboard">Leaderboard</a></li>
           <li><a href="#chartH" data-i18n="navChart">Chart</a></li>
           <li><a href="#stakesH" data-i18n="navStakes">Latest stakes</a></li>
           <li><a href="#valH" data-i18n="navValidator">Validator blocks</a></li>
@@ -603,6 +631,10 @@
           </div>
           <button type="submit" class="add-btn" id="wBtn" data-wi18n="checkBtn">Check wallet</button>
         </form>
+        <div class="watchlist" id="watchlist" hidden>
+          <span class="wl-lab mono" data-wi18n="watchTitle">Watchlist</span>
+          <div class="wl-chips" id="wlChips"></div>
+        </div>
         <p class="wstatus" id="wStatus" role="status" aria-live="polite"></p>
         <div class="mascot-stage" id="mascotStage" hidden aria-hidden="true">
           <div class="ryku-wrap">
@@ -659,9 +691,12 @@
               <div class="unit">Slots/yr</div>
             </div>
           </div>
+          <p class="hc-proj" id="hcProj" hidden></p>
           <p class="hc-foot" id="hcScoreNote">Score = on-chain balance-days. Days Held starts at first detected rkuSOL acquisition.</p>
           <div class="hc-actions">
             <button type="button" class="hc-btn primary" id="hcDownload">Download card (PNG)</button>
+            <button type="button" class="hc-btn" id="hcCopy">Copy link</button>
+            <button type="button" class="hc-btn" id="hcWatch">☆ Watch</button>
             <a class="hc-btn" id="hcSolscan" href="#" target="_blank" rel="noopener noreferrer">View on Solscan</a>
             <a class="hc-btn" id="hcShare" href="#" target="_blank" rel="noopener noreferrer">Share on X</a>
           </div>
@@ -717,6 +752,27 @@
           <span class="mono" id="wChecked"></span>
           <a id="wExplorer" href="#" target="_blank" rel="noopener noreferrer">View on Solscan</a>
         </p>
+      </section>
+
+      <section aria-labelledby="lbH">
+        <div class="sec-head">
+          <h2 id="lbH" data-i18n="lbTitle">Holder leaderboard</h2>
+          <span class="mono" data-i18n="lbTag">Top holders · by score</span>
+        </div>
+        <p class="sec-intro" data-i18n="lbIntro">Every rkuSOL holder ranked by score (balance × days held), extrapolated live from the daily on-chain snapshot. Search any address to find its rank — click a row to check that wallet.</p>
+        <div class="lb-tools">
+          <input id="lbSearch" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="60" placeholder="Search an address…" />
+        </div>
+        <div class="lb-table">
+          <div class="lb-row lb-head">
+            <span class="lb-c-rank" data-i18n="lbRank">Rank</span>
+            <span class="lb-c-holder" data-i18n="lbHolder">Holder</span>
+            <span class="lb-c-bal" data-i18n="lbBal">rkuSOL</span>
+            <span class="lb-c-score" data-i18n="lbScore">Score</span>
+          </div>
+          <div id="lbRows"></div>
+        </div>
+        <p class="lb-meta mono" id="lbMeta"></p>
       </section>
 
       <section aria-labelledby="chartH">
@@ -1112,7 +1168,11 @@
           footerLeft:"Community-made website — not official, not affiliated with Raiku.",
           chartAria:"Line chart of rkuSOL total value locked in US dollars",
           statScore:"Total holder score", statScoreSub:"Every holder's balance-days combined (1 rkuSOL = 1 point per day), from on-chain supply history. Grows live.", liveBadge:"Live",
-          navStats:"Stats", navWallet:"Check wallet", navChart:"Chart", navStakes:"Latest stakes", navValidator:"Validator blocks", navLoop:"Loop calculator", navYield:"Yield", navHow:"How to stake",
+          navStats:"Stats", navWallet:"Check wallet", navLeaderboard:"Leaderboard", navChart:"Chart", navStakes:"Latest stakes", navValidator:"Validator blocks", navLoop:"Loop calculator", navYield:"Yield", navHow:"How to stake",
+          lbTitle:"Holder leaderboard", lbTag:"Top holders · by score",
+          lbIntro:"Every rkuSOL holder ranked by score (balance × days held), extrapolated live from the daily on-chain snapshot. Search any address to find its rank — click a row to check that wallet.",
+          lbSearchPh:"Search an address…", lbRank:"Rank", lbHolder:"Holder", lbBal:"rkuSOL", lbScore:"Score",
+          lbNone:"No holder matches that search.", lbMeta:"{n} holders · snapshot {d} · scores grow live (1 rkuSOL = 1 point per day)",
           stakesTitle:"Latest rkuSOL stakes", stakesTag:"Live · On-chain",
           stakesIntro:"The most recent rkuSOL stake, unstake and transfer activity, read live from the mint account's transactions on Solana mainnet.",
           stakesColType:"Type", stakesColAmt:"Amount", stakesColWallet:"Wallet", stakesColTime:"Time", stakesColTx:"Tx",
@@ -1180,7 +1240,11 @@
           footerLeft:"Website buatan komunitas — bukan resmi, tidak berafiliasi dengan Raiku.",
           chartAria:"Grafik garis total nilai terkunci rkuSOL dalam dolar AS",
           statScore:"Total skor holder", statScoreSub:"Gabungan saldo-harian semua holder (1 rkuSOL = 1 poin per hari), dari riwayat suplai on-chain. Bertambah live.", liveBadge:"Live",
-          navStats:"Statistik", navWallet:"Cek dompet", navChart:"Grafik", navStakes:"Stake terbaru", navValidator:"Blok validator", navLoop:"Kalkulator loop", navYield:"Yield", navHow:"Cara stake",
+          navStats:"Statistik", navWallet:"Cek dompet", navLeaderboard:"Peringkat", navChart:"Grafik", navStakes:"Stake terbaru", navValidator:"Blok validator", navLoop:"Kalkulator loop", navYield:"Yield", navHow:"Cara stake",
+          lbTitle:"Peringkat holder", lbTag:"Holder teratas · berdasarkan skor",
+          lbIntro:"Semua holder rkuSOL diurutkan berdasarkan skor (saldo × hari dipegang), diekstrapolasi live dari snapshot on-chain harian. Cari alamat apa pun untuk melihat peringkatnya — klik barisnya untuk mengecek dompet itu.",
+          lbSearchPh:"Cari alamat…", lbRank:"Peringkat", lbHolder:"Holder", lbBal:"rkuSOL", lbScore:"Skor",
+          lbNone:"Tidak ada holder yang cocok dengan pencarian itu.", lbMeta:"{n} holder · snapshot {d} · skor bertambah live (1 rkuSOL = 1 poin per hari)",
           stakesTitle:"Stake rkuSOL terbaru", stakesTag:"Live · On-chain",
           stakesIntro:"Aktivitas stake, unstake, dan transfer rkuSOL paling baru, dibaca live dari transaksi akun mint di Solana mainnet.",
           stakesColType:"Tipe", stakesColAmt:"Jumlah", stakesColWallet:"Dompet", stakesColTime:"Waktu", stakesColTx:"Tx",
@@ -5866,6 +5930,7 @@
         renderNumbers();
         renderChart();
         applyWalletLang();
+        lbRefresh();
         if (document.getElementById("loopCap")) updateLoopCalc();
       }
 
@@ -5918,7 +5983,7 @@
       var WI18N = {
         en: { walletTitle:"Check a wallet", walletTag:"Solana · On-chain lookup",
           walletIntro:"Paste any Solana wallet address — or a .sol name — to read its rkuSOL position straight from the chain: total tokens held, the SOL those tokens represent, and the wallet's share of the total supply. Balances are fetched live from a public Solana RPC the moment you check.",
-          walletLabel:"Solana wallet address or .sol name", walletPlaceholder:"Paste a Solana address or .sol name…", xLabel:"X username (optional)", xPlaceholder:"@username", checkBtn:"Check wallet", checking:"Reading the chain…",
+          walletLabel:"Solana wallet address or .sol name", walletPlaceholder:"Paste a Solana address or .sol name…", xLabel:"X username (optional)", xPlaceholder:"@username", watchTitle:"Watchlist", checkBtn:"Check wallet", checking:"Reading the chain…",
           resRku:"rkuSOL held", resSol:"SOL balance", resStake:"Stake value", resUsd:"Value", resShare:"Share of supply", resPoints:"Holder points", resSpl:"SPL tokens held", resLast:"Last active", resYield:"Est. annual yield", yieldSub:"Estimate at the snapshot APY above, on the SOL value staked.", resBorrow:"Borrow power (75% LTV)", borrowSub:"Estimate: position value × 75% max LTV, before any market's own limits.",
           pointsNone:"None published — Raiku runs no official points programme, so no points balance exists on-chain.",
           invalidAddr:"That doesn't look like a valid Solana address. Please check it and try again.",
@@ -5927,7 +5992,7 @@
           checkedAt:"Checked", viewExplorer:"View on Solscan" },
         id: { walletTitle:"Cek dompet", walletTag:"Solana · Pencarian on-chain",
           walletIntro:"Tempel alamat dompet Solana mana pun — atau nama .sol — untuk membaca posisi rkuSOL-nya langsung dari chain: total token yang dipegang, berapa SOL yang diwakili token itu, dan porsi dompet tersebut dari total suplai. Saldo diambil live dari RPC publik Solana saat kamu mengecek.",
-          walletLabel:"Alamat dompet Solana atau nama .sol", walletPlaceholder:"Tempel alamat Solana atau nama .sol…", xLabel:"Username X (opsional)", xPlaceholder:"@username", checkBtn:"Cek dompet", checking:"Membaca chain…",
+          walletLabel:"Alamat dompet Solana atau nama .sol", walletPlaceholder:"Tempel alamat Solana atau nama .sol…", xLabel:"Username X (opsional)", xPlaceholder:"@username", watchTitle:"Daftar pantau", checkBtn:"Cek dompet", checking:"Membaca chain…",
           resRku:"rkuSOL yang dipegang", resSol:"Saldo SOL", resStake:"Nilai stake", resUsd:"Nilai", resShare:"Porsi dari suplai", resPoints:"Poin holder", resSpl:"Token SPL dipegang", resLast:"Aktivitas terakhir", resYield:"Estimasi yield tahunan", yieldSub:"Perkiraan pada APY snapshot di atas, dari nilai SOL yang di-stake.", resBorrow:"Daya pinjam (LTV 75%)", borrowSub:"Perkiraan: nilai posisi × LTV maksimum 75%, sebelum batas tiap pasar.",
           pointsNone:"Tidak ada yang diterbitkan — Raiku tidak menjalankan program poin resmi, jadi tidak ada saldo poin di chain.",
           invalidAddr:"Alamat itu sepertinya bukan alamat Solana yang valid. Periksa lagi lalu coba kembali.",
@@ -7103,6 +7168,8 @@
           blackNote:"Blackline Power is an estimate from live on-chain validator data: your share of the Raiku validator's leader slots per year.",
           note:"Score = on-chain balance-days (balance × days held; it stops while the balance is zero). Days Held starts at first detected rkuSOL acquisition.",
           dl:"Download card (PNG)", solscan:"View on Solscan", share:"Share on X", none:"No rkuSOL yet",
+          copyLink:"Copy link", copied:"Link copied!", watchSave:"☆ Watch", watchSaved:"★ Watching",
+          proj:"Score in 30 days: {a} · 90 days: {b} — if you keep holding",
           hist:"Reconstructing holding history from past transactions…", rankp:"Ranking this wallet against all holders…",
           rankNote:"Rank is by holder score (balance-days), from the leaderboard updated",
           rankBalNote:"Rank is by current rkuSOL balance across every holder, read live from the chain (score leaderboard unavailable).",
@@ -7113,6 +7180,8 @@
           blackNote:"Blackline Power adalah perkiraan dari data validator on-chain live: porsi slot leader validator Raiku per tahun milikmu.",
           note:"Skor = saldo-harian on-chain (saldo × hari dipegang; berhenti saat saldo nol). Hari Dipegang dimulai dari akuisisi rkuSOL pertama yang terdeteksi.",
           dl:"Unduh kartu (PNG)", solscan:"Lihat di Solscan", share:"Bagikan di X", none:"Belum ada rkuSOL",
+          copyLink:"Salin link", copied:"Link tersalin!", watchSave:"☆ Pantau", watchSaved:"★ Dipantau",
+          proj:"Skor dalam 30 hari: {a} · 90 hari: {b} — jika tetap dipegang",
           hist:"Menyusun ulang riwayat kepemilikan dari transaksi lampau…", rankp:"Mengurutkan dompet ini di antara semua holder…",
           rankNote:"Peringkat berdasarkan skor holder (saldo-harian), dari leaderboard yang diperbarui",
           rankBalNote:"Peringkat berdasarkan saldo rkuSOL saat ini di antara semua holder, dibaca live dari chain (leaderboard skor tidak tersedia).",
@@ -8144,6 +8213,7 @@
         document.getElementById("hcBlackLab").textContent = c.black || CARD_I18N.en.black;
         document.getElementById("hcScoreNote").textContent = c.note;
         document.getElementById("hcDownload").textContent = c.dl;
+        document.getElementById("hcCopy").textContent = c.copyLink || CARD_I18N.en.copyLink;
         document.getElementById("hcSolscan").textContent = c.solscan;
         if (lastWallet) { renderWalletResult(); renderCard(); }
       }
@@ -8470,6 +8540,91 @@
         });
       }
 
+      /* ——— Public holder leaderboard ———
+         Same daily snapshot as the rank computation, with every score
+         extrapolated to now (snapshot score + balance × days since).
+         Shows the top 100; search scans every holder. Clicking a row
+         runs the wallet checker for that address. */
+      var lbView = null;
+      function lbMetaText() {
+        var d = dict();
+        var tpl = d.lbMeta || I18N.en.lbMeta;
+        if (!lbView) return "";
+        var when = new Date(lbView.asOf).toLocaleDateString(LOCALES[curLang] || "en-US", { day: "numeric", month: "short", year: "numeric" });
+        return tpl.replace("{n}", fmtInt(lbView.total)).replace("{d}", when);
+      }
+      function lbRefresh() {
+        var inp = document.getElementById("lbSearch");
+        if (inp) inp.setAttribute("placeholder", dict().lbSearchPh || I18N.en.lbSearchPh);
+        var meta = document.getElementById("lbMeta");
+        if (meta && lbView) meta.textContent = lbMetaText();
+      }
+      function drawLbRows(rows) {
+        var box = document.getElementById("lbRows");
+        if (!box) return;
+        while (box.firstChild) box.removeChild(box.firstChild);
+        if (!rows.length) {
+          var empty = document.createElement("div");
+          empty.className = "lb-empty";
+          empty.textContent = dict().lbNone || I18N.en.lbNone;
+          box.appendChild(empty);
+          return;
+        }
+        rows.forEach(function (r) {
+          var row = document.createElement("button");
+          row.type = "button";
+          row.className = "lb-row" + (r.rank <= 3 ? " lb-top" : "");
+          var cRank = document.createElement("span"); cRank.className = "lb-c-rank"; cRank.textContent = "#" + r.rank;
+          var cHold = document.createElement("span"); cHold.className = "lb-c-holder mono";
+          var addrTxt = document.createElement("span"); addrTxt.textContent = maskAddr(r.addr);
+          cHold.appendChild(addrTxt);
+          var tier = tierFor(r.bal);
+          if (tier) { var tp = document.createElement("span"); tp.className = "lb-tier"; tp.textContent = tier; cHold.appendChild(tp); }
+          var cBal = document.createElement("span"); cBal.className = "lb-c-bal"; cBal.textContent = nf({ maximumFractionDigits: 2 }).format(r.bal);
+          var cScore = document.createElement("span"); cScore.className = "lb-c-score"; cScore.textContent = fmtInt(Math.round(r.score));
+          row.appendChild(cRank); row.appendChild(cHold); row.appendChild(cBal); row.appendChild(cScore);
+          row.addEventListener("click", function () { checkAddressFromUi(r.addr, ""); });
+          box.appendChild(row);
+        });
+      }
+      function renderLeaderboard() {
+        loadLeaderboard().then(function (lb) {
+          var box = document.getElementById("lbRows");
+          if (!box) return;
+          if (!lb) {
+            var empty = document.createElement("div");
+            empty.className = "lb-empty";
+            empty.textContent = dict().lbNone || I18N.en.lbNone;
+            box.appendChild(empty);
+            return;
+          }
+          var days = Math.max(0, (Date.now() - lb.asOf) / 86400000);
+          var rows = lb.owners.map(function (e) { return { addr: e[0], score: e[1] + e[2] * days, bal: e[2] }; });
+          rows.sort(function (a, b) { return b.score - a.score; });
+          rows.forEach(function (r, i) { r.rank = i + 1; });
+          lbView = { rows: rows, asOf: lb.asOf, total: rows.length };
+          drawLbRows(rows.slice(0, 100));
+          lbRefresh();
+        });
+      }
+      document.getElementById("lbSearch").addEventListener("input", function () {
+        if (!lbView) return;
+        var q = this.value.trim().toLowerCase();
+        if (!q) { drawLbRows(lbView.rows.slice(0, 100)); return; }
+        var hits = lbView.rows.filter(function (r) { return r.addr.toLowerCase().indexOf(q) !== -1; });
+        drawLbRows(hits.slice(0, 50));
+      });
+      /* Fill the checker from elsewhere on the page (leaderboard row,
+         watchlist chip, shared link) and run it. */
+      function checkAddressFromUi(addr, xUser) {
+        document.getElementById("wAddr").value = addr;
+        document.getElementById("wX").value = xUser || "";
+        var h = document.getElementById("walletH");
+        if (h) h.scrollIntoView({ behavior: "smooth", block: "start" });
+        document.getElementById("wform").requestSubmit();
+      }
+      renderLeaderboard();
+
       /* Fallback rank by balance: one getProgramAccounts read of
          every rkuSOL token account, aggregated per owner. Falls back
          further to the 20 largest accounts when the full read is
@@ -8568,6 +8723,18 @@
         document.getElementById("hcBal").textContent = nf({ minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(lw.rku);
         document.getElementById("hcDays").textContent = fmtInt(lw.days || 0);
         document.getElementById("hcScore").textContent = typeof lw.score === "number" ? fmtInt(Math.round(lw.score)) : "—";
+        var projEl = document.getElementById("hcProj");
+        if (projEl) {
+          if (typeof lw.score === "number" && lw.rku > 0) {
+            var tpl = c.proj || CARD_I18N.en.proj;
+            projEl.textContent = tpl.replace("{a}", fmtInt(Math.round(lw.score + lw.rku * 30))).replace("{b}", fmtInt(Math.round(lw.score + lw.rku * 90)));
+            projEl.hidden = false;
+          } else {
+            projEl.hidden = true;
+          }
+        }
+        var watchBtn = document.getElementById("hcWatch");
+        if (watchBtn) watchBtn.textContent = wlIsSaved(lw.addr) ? (c.watchSaved || CARD_I18N.en.watchSaved) : (c.watchSave || CARD_I18N.en.watchSave);
         var bl = blacklinePower(lw.rku);
         document.getElementById("hcBlack").textContent = bl !== null ? "+" + nf({ minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(bl) : "—";
         buildAvatar(lw.addr, tier);
@@ -8795,9 +8962,17 @@
         var note = c.note;
         if (note.length > 92) note = note.slice(0, 92) + "…";
         g.fillText(note, 56, 590);
+        var addrY = 640, siteY = 690;
+        if (typeof lw.score === "number" && lw.rku > 0) {
+          var ptpl = c.proj || CARD_I18N.en.proj;
+          var ptxt = ptpl.replace("{a}", fmtInt(Math.round(lw.score + lw.rku * 30))).replace("{b}", fmtInt(Math.round(lw.score + lw.rku * 90)));
+          g.fillStyle = "#3E6416"; g.font = "600 20px system-ui, sans-serif";
+          g.fillText(ptxt, 56, 622);
+          addrY = 660; siteY = 706;
+        }
         g.fillStyle = "rgba(34,61,14,0.55)"; g.font = "400 18px ui-monospace, monospace";
-        g.fillText(maskAddr(lw.addr), 56, 640);
-        g.fillText("rkusolhodler.netlify.app", 56, 690);
+        g.fillText(maskAddr(lw.addr), 56, addrY);
+        g.fillText("rkusolhodler.netlify.app", 56, siteY);
         var a = document.createElement("a");
         a.download = "rkusol-holder-" + lw.addr.slice(0, 4) + lw.addr.slice(-4) + ".png";
         a.href = cv.toDataURL("image/png");
@@ -8936,6 +9111,94 @@
         }
         runWalletCheck(raw, null);
       });
+
+      /* ——— Shareable card link + watchlist ———
+         A shared link carries ?wallet=<address>&x=<username>; opening it
+         fills the checker and runs it. The watchlist lives only in this
+         browser's localStorage. */
+      function cardLink() {
+        if (!lastWallet) return location.href;
+        var u = location.origin + location.pathname + "?wallet=" + encodeURIComponent(lastWallet.addr);
+        if (lastWallet.x) u += "&x=" + encodeURIComponent(lastWallet.x.username);
+        return u;
+      }
+      document.getElementById("hcCopy").addEventListener("click", function () {
+        var btn = this;
+        var c = cdict();
+        var done = function () {
+          btn.textContent = c.copied || CARD_I18N.en.copied;
+          setTimeout(function () { btn.textContent = c.copyLink || CARD_I18N.en.copyLink; }, 2000);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(cardLink()).then(done).catch(function () { window.prompt("Copy this link:", cardLink()); });
+        } else {
+          window.prompt("Copy this link:", cardLink());
+        }
+      });
+      (function () {
+        try {
+          var q = new URLSearchParams(location.search);
+          var w = (q.get("wallet") || "").trim();
+          var x = (q.get("x") || "").trim().replace(/^@/, "");
+          if (w && (isValidSolanaAddress(w) || /\.sol$/i.test(w))) {
+            checkAddressFromUi(w, /^[A-Za-z0-9_]{1,15}$/.test(x) ? x : "");
+          }
+        } catch (e) { /* malformed query — ignore */ }
+      })();
+      var WL_KEY = "rku-watchlist";
+      function wlLoad() {
+        try { var v = JSON.parse(localStorage.getItem(WL_KEY) || "[]"); return Array.isArray(v) ? v : []; } catch (e) { return []; }
+      }
+      function wlSave(list) {
+        try { localStorage.setItem(WL_KEY, JSON.stringify(list)); } catch (e) { /* storage unavailable */ }
+      }
+      function wlIsSaved(addr) {
+        return wlLoad().some(function (it) { return it && it.addr === addr; });
+      }
+      function renderWatchlist() {
+        var wrap = document.getElementById("watchlist");
+        var box = document.getElementById("wlChips");
+        if (!wrap || !box) return;
+        var list = wlLoad();
+        while (box.firstChild) box.removeChild(box.firstChild);
+        wrap.hidden = !list.length;
+        list.forEach(function (it) {
+          if (!it || !it.addr) return;
+          var chip = document.createElement("span");
+          chip.className = "wl-chip";
+          var go = document.createElement("button");
+          go.type = "button";
+          go.className = "wl-go mono";
+          go.textContent = maskAddr(it.addr) + (it.x ? " · @" + it.x : "");
+          go.addEventListener("click", function () { checkAddressFromUi(it.addr, it.x || ""); });
+          var rm = document.createElement("button");
+          rm.type = "button";
+          rm.className = "wl-x";
+          rm.textContent = "×";
+          rm.setAttribute("aria-label", "Remove");
+          rm.addEventListener("click", function () {
+            wlSave(wlLoad().filter(function (o) { return o.addr !== it.addr; }));
+            renderWatchlist();
+            if (lastWallet) renderCard();
+          });
+          chip.appendChild(go);
+          chip.appendChild(rm);
+          box.appendChild(chip);
+        });
+      }
+      document.getElementById("hcWatch").addEventListener("click", function () {
+        if (!lastWallet) return;
+        var list = wlLoad();
+        if (wlIsSaved(lastWallet.addr)) {
+          list = list.filter(function (o) { return o.addr !== lastWallet.addr; });
+        } else {
+          list.push({ addr: lastWallet.addr, x: lastWallet.x ? lastWallet.x.username : "" });
+        }
+        wlSave(list);
+        renderWatchlist();
+        renderCard();
+      });
+      renderWatchlist();
 
       /* ——— Live data + local-time badges + total holder score ———
          Stats start from the baked snapshot, then refresh live:
