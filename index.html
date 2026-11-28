@@ -443,6 +443,7 @@
       .hc-x { font-size: 15px; font-weight: 600; color: var(--ink-70, rgba(34,61,14,0.7)); margin-top: 2px; overflow-wrap: anywhere; }
       /* Holder leaderboard */
       .lb-tools { margin-top: 16px; }
+      .lb-scorenote { font-size: 13px; font-weight: 600; color: var(--chart); margin-top: 12px; max-width: 66ch; }
       .lb-tiers { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
       .lb-tierstat { border: 1px solid var(--ink-18); border-radius: 10px; padding: 10px 16px; background: var(--field); min-width: 150px; }
       .lb-tierstat .ts-name { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-70); }
@@ -766,6 +767,7 @@
           <span class="mono" data-i18n="lbTag">Top holders · by score</span>
         </div>
         <p class="sec-intro" data-i18n="lbIntro">Every rkuSOL holder ranked by score (balance × days held), extrapolated live from the daily on-chain snapshot. Search any address to find its rank — click a row to check that wallet.</p>
+        <p class="lb-scorenote" data-i18n="lbScoreNote">Ranking is by holder score (balance × days held) — not by total amount staked. A smaller holder who held longer can outrank a bigger recent staker.</p>
         <div class="lb-tiers" id="lbTiers"></div>
         <p class="lb-tiers-note mono" id="lbTiersNote"></p>
         <div class="lb-tools">
@@ -1182,6 +1184,7 @@
           lbSearchPh:"Search an address…", lbRank:"Rank", lbHolder:"Holder", lbBal:"rkuSOL", lbScore:"Score",
           lbNone:"No holder matches that search.", lbMeta:"{n} holders · snapshot {d} · scores grow live (1 rkuSOL = 1 point per day)", lbTierUnit:"holders",
           lbLiveNote:"Live on-chain · updated {t} · unstaked wallets excluded", lbSnapNote:"Snapshot {d}",
+          lbScoreNote:"Ranking is by holder score (balance × days held) — not by total amount staked. A smaller holder who held longer can outrank a bigger recent staker.",
           stakesTitle:"Latest rkuSOL stakes", stakesTag:"Live · On-chain",
           stakesIntro:"The most recent rkuSOL stake, unstake and transfer activity, read live from the mint account's transactions on Solana mainnet.",
           stakesColType:"Type", stakesColAmt:"Amount", stakesColWallet:"Wallet", stakesColTime:"Time", stakesColTx:"Tx",
@@ -1255,6 +1258,7 @@
           lbSearchPh:"Cari alamat…", lbRank:"Peringkat", lbHolder:"Holder", lbBal:"rkuSOL", lbScore:"Skor",
           lbNone:"Tidak ada holder yang cocok dengan pencarian itu.", lbMeta:"{n} holder · snapshot {d} · skor bertambah live (1 rkuSOL = 1 poin per hari)", lbTierUnit:"holder",
           lbLiveNote:"Live on-chain · diperbarui {t} · wallet yang sudah unstake tidak dihitung", lbSnapNote:"Snapshot {d}",
+          lbScoreNote:"Peringkat berdasarkan skor holder (saldo × hari dipegang) — bukan berdasarkan total staking. Holder kecil yang memegang lebih lama bisa mengalahkan staker besar yang baru masuk.",
           stakesTitle:"Stake rkuSOL terbaru", stakesTag:"Live · On-chain",
           stakesIntro:"Aktivitas stake, unstake, dan transfer rkuSOL paling baru, dibaca live dari transaksi akun mint di Solana mainnet.",
           stakesColType:"Tipe", stakesColAmt:"Jumlah", stakesColWallet:"Dompet", stakesColTime:"Waktu", stakesColTx:"Tx",
