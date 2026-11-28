@@ -449,6 +449,7 @@
       .lb-mode.on { background: var(--chart); color: #fff; }
       .lb-tiers { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
       .lb-logo { width: 36px; height: 36px; object-fit: contain; }
+      .tk { text-transform: none; }
       .lb-tierstat { border: 1px solid var(--ink-18); border-radius: 10px; padding: 10px 16px; background: var(--field); min-width: 150px; }
       .lb-tierstat .ts-img { width: 38px; height: 38px; object-fit: contain; display: block; margin-bottom: 4px; }
       .lb-tierstat .ts-name { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-70); }
@@ -602,7 +603,7 @@
           <p class="sub" data-i18n="statHoldersSub">Wallets holding $rkuSOL (Phantom).</p>
         </div>
         <div class="cell" role="listitem">
-          <p class="lab mono" data-i18n="statSupply">$rkuSOL supply</p>
+          <p class="lab mono" data-i18n="statSupply"><span class="tk">$rkuSOL</span> supply</p>
           <div class="val" id="statSupply">177,630</div>
           <p class="sub" data-i18n="statSupplySub">Tokens in circulation (Phantom).</p>
         </div>
@@ -622,7 +623,7 @@
           <p class="sub" data-i18n="statRateSub">SOL per 1 $rkuSOL, implied by stake ÷ supply.</p>
         </div>
         <div class="cell" role="listitem">
-          <p class="lab mono"><span class="lst-badge" aria-hidden="true"><svg viewBox="0 0 100 100" focusable="false"><circle cx="50" cy="50" r="48" fill="#0B0B0B" stroke="rgba(140,140,140,0.45)" stroke-width="2"/><path transform="translate(15 15) scale(0.7)" fill="#C0FE37" d="M27.6 9.9L72.7 10.0L73.8 10.9L74.8 12.5L86.1 32.6L94.2 46.0L96.0 49.3L96.0 50.7L92.7 55.9L92.7 56.5L81.8 75.4L80.4 77.2L80.4 77.8L74.2 88.5L73.1 89.6L71.9 90.2L27.9 90.2L27.2 89.5L27.4 89.1L30.1 85.0L37.7 71.3L39.1 69.4L39.1 68.8L40.8 66.5L40.6 66.3L42.2 63.5L43.4 62.0L43.6 61.0L50.0 50.1L4.3 50.0L4.0 49.7L22.9 16.4L23.5 16.0L25.8 11.5Z"/></svg></span><span data-i18n="statPrice">$rkuSOL price</span></p>
+          <p class="lab mono"><span class="lst-badge" aria-hidden="true"><svg viewBox="0 0 100 100" focusable="false"><circle cx="50" cy="50" r="48" fill="#0B0B0B" stroke="rgba(140,140,140,0.45)" stroke-width="2"/><path transform="translate(15 15) scale(0.7)" fill="#C0FE37" d="M27.6 9.9L72.7 10.0L73.8 10.9L74.8 12.5L86.1 32.6L94.2 46.0L96.0 49.3L96.0 50.7L92.7 55.9L92.7 56.5L81.8 75.4L80.4 77.2L80.4 77.8L74.2 88.5L73.1 89.6L71.9 90.2L27.9 90.2L27.2 89.5L27.4 89.1L30.1 85.0L37.7 71.3L39.1 69.4L39.1 68.8L40.8 66.5L40.6 66.3L42.2 63.5L43.4 62.0L43.6 61.0L50.0 50.1L4.3 50.0L4.0 49.7L22.9 16.4L23.5 16.0L25.8 11.5Z"/></svg></span><span data-i18n="statPrice"><span class="tk">$rkuSOL</span> price</span></p>
           <div class="val" id="statPrice">$69.21</div>
           <p class="sub" id="statPriceSub" data-i18n="statPriceSub">Exchange rate × live SOL price (Jupiter).</p>
         </div>
@@ -666,7 +667,7 @@
               <div class="hc-logo" aria-hidden="true"><svg viewBox="0 0 100 100" focusable="false"><path d="M81.3 25.6L82.6 25.4L84.3 26.4L90.9 38.1L85.4 48.4L83.0 51.1L70.3 50.9L70.0 49.1L75.8 39.6L75.7 38.6L19.6 38.6L18.7 37.4L25.4 25.8Z"/><path d="M27.1 43.6L58.1 43.4L68.3 61.0L95.1 61.0L96.0 62.3L88.9 74.2L61.7 74.6L58.2 70.0L50.7 56.6L21.0 56.6L20.1 54.9Z"/><path d="M11.0 61.2L36.8 61.0L38.8 63.4L40.7 68.1L36.4 74.6L4.9 74.2L4.0 73.3L4.4 71.4L9.9 61.9Z"/></svg></div>
               <div>
                 <div class="hc-name">Raiku</div>
-                <div class="hc-sub" id="hcSub">$rkuSOL Holder Card</div>
+                <div class="hc-sub" id="hcSub"><span class="tk">$rkuSOL</span> Holder Card</div>
               </div>
             </div>
             <div class="hc-rank">
@@ -683,7 +684,7 @@
               <div class="hc-addr mono" id="hcAddr"></div>
             </div>
             <div class="hc-bal">
-              <div class="lab mono" id="hcBalLab">$rkuSOL BALANCE</div>
+              <div class="lab mono" id="hcBalLab"><span class="tk">$rkuSOL</span> BALANCE</div>
               <div class="val" id="hcBal">0.00</div>
               <div class="unit"><span class="lst-badge" aria-hidden="true"><svg viewBox="0 0 100 100" focusable="false"><circle cx="50" cy="50" r="48" fill="#0B0B0B" stroke="rgba(140,140,140,0.45)" stroke-width="2"/><path transform="translate(15 15) scale(0.7)" fill="#C0FE37" d="M27.6 9.9L72.7 10.0L73.8 10.9L74.8 12.5L86.1 32.6L94.2 46.0L96.0 49.3L96.0 50.7L92.7 55.9L92.7 56.5L81.8 75.4L80.4 77.2L80.4 77.8L74.2 88.5L73.1 89.6L71.9 90.2L27.9 90.2L27.2 89.5L27.4 89.1L30.1 85.0L37.7 71.3L39.1 69.4L39.1 68.8L40.8 66.5L40.6 66.3L42.2 63.5L43.4 62.0L43.6 61.0L50.0 50.1L4.3 50.0L4.0 49.7L22.9 16.4L23.5 16.0L25.8 11.5Z"/></svg></span>$rkuSOL</div>
             </div>
@@ -717,7 +718,7 @@
 
         <div class="ledger wresults" id="wResults" role="list" hidden>
           <div class="cell" role="listitem">
-            <p class="lab mono" data-wi18n="resRku">$rkuSOL held</p>
+            <p class="lab mono" data-wi18n="resRku"><span class="tk">$rkuSOL</span> held</p>
             <div class="val" id="wRku">—</div>
           </div>
           <div class="cell" role="listitem">
@@ -786,7 +787,7 @@
           <div class="lb-row lb-head">
             <span class="lb-c-rank" data-i18n="lbRank">Rank</span>
             <span class="lb-c-holder" data-i18n="lbHolder">Holder</span>
-            <span class="lb-c-bal" data-i18n="lbBal">$rkuSOL</span>
+            <span class="lb-c-bal tk" data-i18n="lbBal">$rkuSOL</span>
             <span class="lb-c-score" data-i18n="lbScore">Score</span>
           </div>
           <div id="lbRows"></div>
@@ -897,7 +898,7 @@
             <input id="loopCap" type="number" min="0" step="any" value="100" />
           </div>
           <div>
-            <label for="loopLstApy" data-i18n="loopLst">$rkuSOL staking APY (%)</label>
+            <label for="loopLstApy" data-i18n="loopLst"><span class="tk">$rkuSOL</span> staking APY (%)</label>
             <input id="loopLstApy" type="number" min="0" step="any" value="4.90" />
           </div>
           <div>
@@ -946,7 +947,7 @@
       <section aria-labelledby="aboutH">
         <div class="sec-head">
           <h2 id="aboutH" data-i18n="aboutTitle">Where the yield comes from</h2>
-          <span class="mono" data-i18n="aboutTag">$rkuSOL · Earnings</span>
+          <span class="mono" data-i18n="aboutTag"><span class="tk">$rkuSOL</span> · Earnings</span>
         </div>
         <p class="sec-intro" data-i18n="aboutIntro">A conventional liquid staking token earns from inflation rewards and, at best, MEV. $rkuSOL stacks a third source on top: the revenue of Raiku's blockspace coordination auctions.</p>
         <div class="earn">
@@ -5941,6 +5942,22 @@
         });
       }
 
+      /* The token name is always written $rkuSOL — never let CSS
+         text-transform uppercase it. setTkText wraps each occurrence
+         in a span that opts out of uppercase; tkUpper uppercases a
+         string for canvas while preserving the token's case. */
+      function setTkText(el, text) {
+        if (typeof text !== "string" || text.indexOf("$rkuSOL") === -1) { el.textContent = text; return; }
+        while (el.firstChild) el.removeChild(el.firstChild);
+        text.split("$rkuSOL").forEach(function (part, i) {
+          if (i > 0) { var s = document.createElement("span"); s.className = "tk"; s.textContent = "$rkuSOL"; el.appendChild(s); }
+          if (part) el.appendChild(document.createTextNode(part));
+        });
+      }
+      function tkUpper(text) {
+        return String(text).split("$rkuSOL").map(function (p) { return p.toUpperCase(); }).join("$rkuSOL");
+      }
+
       function applyLang(lang) {
         curLang = I18N[lang] ? lang : "en";
         var d = dict();
@@ -5949,7 +5966,7 @@
         var els = document.querySelectorAll("[data-i18n]");
         for (var i = 0; i < els.length; i++) {
           var k = els[i].getAttribute("data-i18n");
-          if (d[k]) els[i].textContent = d[k];
+          if (d[k]) setTkText(els[i], d[k]);
         }
         updateBadges();
         renderNumbers();
@@ -8225,21 +8242,21 @@
         var els = document.querySelectorAll("[data-wi18n]");
         for (var i = 0; i < els.length; i++) {
           var k = els[i].getAttribute("data-wi18n");
-          if (w[k]) els[i].textContent = w[k];
+          if (w[k]) setTkText(els[i], w[k]);
         }
         document.getElementById("wAddr").setAttribute("placeholder", w.walletPlaceholder);
         document.getElementById("wX").setAttribute("placeholder", w.xPlaceholder || WI18N.en.xPlaceholder);
         var c = cdict();
-        document.getElementById("hcSub").textContent = c.sub;
-        document.getElementById("hcRankLab").textContent = c.rank;
-        document.getElementById("hcBalLab").textContent = c.bal;
-        document.getElementById("hcDaysLab").textContent = c.days;
-        document.getElementById("hcScoreLab").textContent = c.score;
-        document.getElementById("hcBlackLab").textContent = c.black || CARD_I18N.en.black;
-        document.getElementById("hcScoreNote").textContent = c.note;
-        document.getElementById("hcDownload").textContent = c.dl;
-        document.getElementById("hcCopy").textContent = c.copyLink || CARD_I18N.en.copyLink;
-        document.getElementById("hcSolscan").textContent = c.solscan;
+        setTkText(document.getElementById("hcSub"), c.sub);
+        setTkText(document.getElementById("hcRankLab"), c.rank);
+        setTkText(document.getElementById("hcBalLab"), c.bal);
+        setTkText(document.getElementById("hcDaysLab"), c.days);
+        setTkText(document.getElementById("hcScoreLab"), c.score);
+        setTkText(document.getElementById("hcBlackLab"), c.black || CARD_I18N.en.black);
+        setTkText(document.getElementById("hcScoreNote"), c.note);
+        setTkText(document.getElementById("hcDownload"), c.dl);
+        setTkText(document.getElementById("hcCopy"), c.copyLink || CARD_I18N.en.copyLink);
+        setTkText(document.getElementById("hcSolscan"), c.solscan);
         if (lastWallet) { renderWalletResult(); renderCard(); }
       }
 
@@ -8622,7 +8639,7 @@
           im.src = t[0] === "Platinum" ? "ryku-royal.webp" : (t[0] === "Gold" ? "ryku-gold.webp" : "ryku.webp");
           im.alt = "";
           card.appendChild(im);
-          var nm = document.createElement("div"); nm.className = "ts-name"; nm.textContent = "$rkuSOL " + t[0];
+          var nm = document.createElement("div"); nm.className = "ts-name"; setTkText(nm, "$rkuSOL " + t[0]);
           var num = document.createElement("div"); num.className = "ts-num"; num.textContent = fmtInt(t[1]);
           var un = document.createElement("div"); un.className = "ts-unit"; un.textContent = unit;
           card.appendChild(nm); card.appendChild(num); card.appendChild(un);
@@ -8717,7 +8734,7 @@
           cHold.appendChild(addrTxt);
           var tier = tierFor(r.bal);
           if (tier) { var tp = document.createElement("span"); tp.className = "lb-tier"; tp.textContent = tier; cHold.appendChild(tp); }
-          var cBal = document.createElement("span"); cBal.className = "lb-c-bal"; cBal.textContent = nf({ maximumFractionDigits: 2 }).format(r.bal);
+          var cBal = document.createElement("span"); cBal.className = "lb-c-bal"; cBal.textContent = nf({ maximumFractionDigits: r.bal < 1 ? 4 : 2 }).format(r.bal);
           var cScore = document.createElement("span"); cScore.className = "lb-c-score"; cScore.textContent = fmtInt(Math.round(r.score));
           row.appendChild(cRank); row.appendChild(cHold); row.appendChild(cBal); row.appendChild(cScore);
           row.addEventListener("click", function () { checkAddressFromUi(r.addr, ""); });
@@ -9015,7 +9032,7 @@
         g.textAlign = "left"; g.fillStyle = "#223D0E"; g.font = "700 40px system-ui, sans-serif";
         g.fillText("Raiku", 166, 92);
         g.fillStyle = "rgba(34,61,14,0.55)"; g.font = "600 22px system-ui, sans-serif";
-        g.fillText(c.sub.toUpperCase(), 166, 128);
+        g.fillText(tkUpper(c.sub), 166, 128);
         g.textAlign = "right"; g.fillStyle = "#223D0E"; g.font = "800 56px system-ui, monospace";
         g.fillText(lw.rank ? "#" + lw.rank : "—", 1170, 100);
         g.fillStyle = "rgba(34,61,14,0.55)"; g.font = "400 20px system-ui, sans-serif";
