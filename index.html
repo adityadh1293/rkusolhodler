@@ -431,11 +431,11 @@
       }
       /* Rotating Raiku mark watermark behind the content */
       .bg-mark { position: fixed; inset: 0; display: grid; place-items: center; pointer-events: none; z-index: 0; overflow: hidden; }
-      .bg-mark img { width: min(74vmin, 780px); opacity: 0.05; animation: bgmark-in 2.5s ease-out, bgmark-sway 16s ease-in-out 2.5s infinite alternate, bgmark-breathe 22s ease-in-out 2.5s infinite alternate; will-change: transform, opacity; }
+      .bg-mark img { width: min(74vmin, 780px); opacity: 0.13; animation: bgmark-in 2.5s ease-out, bgmark-sway 16s ease-in-out 2.5s infinite alternate, bgmark-breathe 22s ease-in-out 2.5s infinite alternate; will-change: transform, opacity; }
       @keyframes bgmark-in { from { opacity: 0; } }
       @keyframes bgmark-sway { from { transform: rotate(-5deg); } to { transform: rotate(5deg); } }
       @keyframes bgmark-breathe { from { scale: 1; } to { scale: 1.05; } }
-      [data-theme="dark"] .bg-mark img { opacity: 0.08; filter: brightness(3.4) saturate(0.75); }
+      [data-theme="dark"] .bg-mark img { opacity: 0.1; filter: brightness(1.7) saturate(1.05); }
       @media (prefers-reduced-motion: reduce) { .bg-mark img { animation: none; } }
       .wrap { position: relative; z-index: 1; }
       /* Optional X identity on the holder card */
