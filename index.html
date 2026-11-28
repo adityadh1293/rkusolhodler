@@ -448,6 +448,7 @@
       .lb-tierstat .ts-name { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-70); }
       .lb-tierstat .ts-num { font-size: 24px; font-weight: 800; line-height: 1.2; font-variant-numeric: tabular-nums; }
       .lb-tierstat .ts-unit { font-size: 12px; color: var(--ink-55); }
+      .lb-tiers-note { font-size: 11px; color: var(--ink-55); margin-top: 8px; }
       .lb-tools input { width: 100%; max-width: 420px; }
       .lb-table { margin-top: 14px; border: 1px solid var(--ink-18); border-radius: 10px; overflow: hidden; }
       .lb-row { display: grid; grid-template-columns: 64px 1fr 110px 130px; gap: 10px; align-items: center; padding: 9px 14px; border-top: 1px solid var(--ink-10); font-size: 14px; }
@@ -765,10 +766,11 @@
           <span class="mono" data-i18n="lbTag">Top holders · by score</span>
         </div>
         <p class="sec-intro" data-i18n="lbIntro">Every rkuSOL holder ranked by score (balance × days held), extrapolated live from the daily on-chain snapshot. Search any address to find its rank — click a row to check that wallet.</p>
+        <div class="lb-tiers" id="lbTiers"></div>
+        <p class="lb-tiers-note mono" id="lbTiersNote"></p>
         <div class="lb-tools">
           <input id="lbSearch" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="60" placeholder="Search an address…" />
         </div>
-        <div class="lb-tiers" id="lbTiers"></div>
         <div class="lb-table">
           <div class="lb-row lb-head">
             <span class="lb-c-rank" data-i18n="lbRank">Rank</span>
@@ -1179,6 +1181,7 @@
           lbIntro:"Every rkuSOL holder ranked by score (balance × days held), extrapolated live from the daily on-chain snapshot. Search any address to find its rank — click a row to check that wallet.",
           lbSearchPh:"Search an address…", lbRank:"Rank", lbHolder:"Holder", lbBal:"rkuSOL", lbScore:"Score",
           lbNone:"No holder matches that search.", lbMeta:"{n} holders · snapshot {d} · scores grow live (1 rkuSOL = 1 point per day)", lbTierUnit:"holders",
+          lbLiveNote:"Live on-chain · updated {t} · unstaked wallets excluded", lbSnapNote:"Snapshot {d}",
           stakesTitle:"Latest rkuSOL stakes", stakesTag:"Live · On-chain",
           stakesIntro:"The most recent rkuSOL stake, unstake and transfer activity, read live from the mint account's transactions on Solana mainnet.",
           stakesColType:"Type", stakesColAmt:"Amount", stakesColWallet:"Wallet", stakesColTime:"Time", stakesColTx:"Tx",
@@ -1251,6 +1254,7 @@
           lbIntro:"Semua holder rkuSOL diurutkan berdasarkan skor (saldo × hari dipegang), diekstrapolasi live dari snapshot on-chain harian. Cari alamat apa pun untuk melihat peringkatnya — klik barisnya untuk mengecek dompet itu.",
           lbSearchPh:"Cari alamat…", lbRank:"Peringkat", lbHolder:"Holder", lbBal:"rkuSOL", lbScore:"Skor",
           lbNone:"Tidak ada holder yang cocok dengan pencarian itu.", lbMeta:"{n} holder · snapshot {d} · skor bertambah live (1 rkuSOL = 1 poin per hari)", lbTierUnit:"holder",
+          lbLiveNote:"Live on-chain · diperbarui {t} · wallet yang sudah unstake tidak dihitung", lbSnapNote:"Snapshot {d}",
           stakesTitle:"Stake rkuSOL terbaru", stakesTag:"Live · On-chain",
           stakesIntro:"Aktivitas stake, unstake, dan transfer rkuSOL paling baru, dibaca live dari transaksi akun mint di Solana mainnet.",
           stakesColType:"Tipe", stakesColAmt:"Jumlah", stakesColWallet:"Dompet", stakesColTime:"Waktu", stakesColTx:"Tx",
@@ -8580,6 +8584,49 @@
           card.appendChild(nm); card.appendChild(num); card.appendChild(un);
           box.appendChild(card);
         });
+        var note = document.getElementById("lbTiersNote");
+        if (note) {
+          if (lbView.tiersLive) {
+            var t = new Date(lbView.tiersAt).toLocaleTimeString(LOCALES[curLang] || "en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+            note.textContent = (dict().lbLiveNote || I18N.en.lbLiveNote).replace("{t}", t);
+          } else {
+            var d = new Date(lbView.asOf).toLocaleDateString(LOCALES[curLang] || "en-US", { day: "numeric", month: "short", year: "numeric" });
+            note.textContent = (dict().lbSnapNote || I18N.en.lbSnapNote).replace("{d}", d);
+          }
+        }
+      }
+      /* Tier statistics from CURRENT on-chain balances (one
+         getProgramAccounts read, aggregated per owner). Wallets that
+         unstaked to zero are naturally excluded. Falls back to the
+         snapshot counts when the live read fails. */
+      var lbTiersBusy = false;
+      function loadLiveTiers() {
+        if (lbTiersBusy || !lbView) return;
+        lbTiersBusy = true;
+        rpcCall("getProgramAccounts", [TOKEN_PROGRAM, {
+          encoding: "jsonParsed",
+          filters: [{ dataSize: 165 }, { memcmp: { offset: 0, bytes: RKU_MINT } }]
+        }], 30000).then(function (res) {
+          if (!Array.isArray(res)) throw new Error("shape");
+          var perOwner = {};
+          res.forEach(function (item) {
+            try {
+              var info = item.account.data.parsed.info;
+              var o = info.owner;
+              if (typeof o !== "string") return;
+              perOwner[o] = (perOwner[o] || 0) + tokenUiAmount(info.tokenAmount);
+            } catch (e) { /* skip unparsable account */ }
+          });
+          var tiers = { Platinum: 0, Gold: 0, Hodler: 0 };
+          Object.keys(perOwner).forEach(function (o) {
+            var t = tierFor(perOwner[o]);
+            if (t) tiers[t]++;
+          });
+          lbView.tiers = tiers;
+          lbView.tiersLive = true;
+          lbView.tiersAt = Date.now();
+          drawLbTiers();
+        }).catch(function () { /* keep snapshot counts */ }).then(function () { lbTiersBusy = false; });
       }
       function drawLbRows(rows) {
         var box = document.getElementById("lbRows");
@@ -8626,9 +8673,11 @@
           rows.forEach(function (r, i) { r.rank = i + 1; });
           var tiers = { Platinum: 0, Gold: 0, Hodler: 0 };
           rows.forEach(function (r) { var t = tierFor(r.bal); if (t) tiers[t]++; });
-          lbView = { rows: rows, asOf: lb.asOf, total: rows.length, tiers: tiers };
+          lbView = { rows: rows, asOf: lb.asOf, total: rows.length, tiers: tiers, tiersLive: false, tiersAt: null };
           drawLbRows(rows.slice(0, 100));
           lbRefresh();
+          loadLiveTiers();
+          setInterval(loadLiveTiers, 60000);
         });
       }
       document.getElementById("lbSearch").addEventListener("input", function () {
