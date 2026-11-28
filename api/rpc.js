@@ -77,6 +77,7 @@ export default async function handler(req, res) {
   if (req.method !== "POST") {
     return send(res, 405, { jsonrpc: "2.0", id: 1, error: { code: -32600, message: "POST only" } });
   }
+  if (!rl.originOk(req)) return rl.denyOrigin(res);
   const rate = await rl.checkRate(req, "rpc", 60);
   if (!rate.ok) return rl.deny(res, rate.retryAfter);
   const raw = await readBody(req);

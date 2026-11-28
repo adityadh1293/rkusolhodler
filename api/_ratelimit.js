@@ -65,6 +65,31 @@ async function checkRate(req, bucket, limit) {
   return { ok: r.count <= limit, retryAfter: r.retryAfter };
 }
 
+// Origin check: browser requests carrying an Origin (or Referer) from a
+// foreign site are rejected, so other websites cannot use these endpoints
+// as a free proxy from their visitors' browsers. Requests with neither
+// header (curl, health checks) pass through — the rate limiter still
+// applies to them. This raises the bar against casual abuse; it is not a
+// substitute for the rate limit.
+const ALLOWED_ORIGINS = new Set(["https://rkusolhodler.vercel.app"]);
+
+function originOk(req) {
+  const origin = req.headers && req.headers.origin;
+  if (typeof origin === "string" && origin) return ALLOWED_ORIGINS.has(origin);
+  const referer = req.headers && req.headers.referer;
+  if (typeof referer === "string" && referer) {
+    try { return ALLOWED_ORIGINS.has(new URL(referer).origin); } catch (e) { return false; }
+  }
+  return true;
+}
+
+function denyOrigin(res) {
+  res.status(403);
+  res.setHeader("Content-Type", "application/json");
+  res.setHeader("Cache-Control", "no-store");
+  res.end(JSON.stringify({ error: "origin_not_allowed" }));
+}
+
 function deny(res, retryAfter) {
   res.status(429);
   res.setHeader("Content-Type", "application/json");
@@ -73,4 +98,4 @@ function deny(res, retryAfter) {
   res.end(JSON.stringify({ error: "rate_limited" }));
 }
 
-module.exports = { checkRate, deny };
+module.exports = { checkRate, deny, originOk, denyOrigin };
