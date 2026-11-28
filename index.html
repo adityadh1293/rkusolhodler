@@ -8553,7 +8553,7 @@
       /* ——— Public holder leaderboard ———
          Same daily snapshot as the rank computation, with every score
          extrapolated to now (snapshot score + balance × days since).
-         Shows the top 100; search scans every holder. Clicking a row
+         Shows the top 10; search scans every holder. Clicking a row
          runs the wallet checker for that address. */
       var lbView = null;
       function lbMetaText() {
@@ -8674,7 +8674,7 @@
           var tiers = { Platinum: 0, Gold: 0, Hodler: 0 };
           rows.forEach(function (r) { var t = tierFor(r.bal); if (t) tiers[t]++; });
           lbView = { rows: rows, asOf: lb.asOf, total: rows.length, tiers: tiers, tiersLive: false, tiersAt: null };
-          drawLbRows(rows.slice(0, 100));
+          drawLbRows(rows.slice(0, 10));
           lbRefresh();
           loadLiveTiers();
           setInterval(loadLiveTiers, 60000);
@@ -8683,9 +8683,9 @@
       document.getElementById("lbSearch").addEventListener("input", function () {
         if (!lbView) return;
         var q = this.value.trim().toLowerCase();
-        if (!q) { drawLbRows(lbView.rows.slice(0, 100)); return; }
+        if (!q) { drawLbRows(lbView.rows.slice(0, 10)); return; }
         var hits = lbView.rows.filter(function (r) { return r.addr.toLowerCase().indexOf(q) !== -1; });
-        drawLbRows(hits.slice(0, 50));
+        drawLbRows(hits.slice(0, 10));
       });
       /* Fill the checker from elsewhere on the page (leaderboard row,
          watchlist chip, shared link) and run it. */
