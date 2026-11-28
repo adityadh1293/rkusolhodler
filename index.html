@@ -442,7 +442,11 @@
       .wform .xlab { display: block; margin-top: 12px; }
       .hc-x { font-size: 15px; font-weight: 600; color: var(--ink-70, rgba(34,61,14,0.7)); margin-top: 2px; overflow-wrap: anywhere; }
       /* Holder leaderboard */
-      .lb-tools { margin-top: 16px; }
+      .lb-tools { margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+      .lb-tools input { flex: 1 1 240px; }
+      .lb-modes { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+      .lb-mode { appearance: none; border: 0; background: var(--paper); color: var(--ink-55); font: inherit; font-size: 13px; font-weight: 600; padding: 9px 14px; cursor: pointer; }
+      .lb-mode.on { background: var(--chart); color: #fff; }
       .lb-scorenote { font-size: 13px; font-weight: 600; color: var(--chart); margin-top: 12px; max-width: 66ch; }
       .lb-tiers { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
       .lb-tierstat { border: 1px solid var(--ink-18); border-radius: 10px; padding: 10px 16px; background: var(--field); min-width: 150px; }
@@ -767,11 +771,15 @@
           <span class="mono" data-i18n="lbTag">Top holders · by score</span>
         </div>
         <p class="sec-intro" data-i18n="lbIntro">Every rkuSOL holder ranked by score (balance × days held), extrapolated live from the daily on-chain snapshot. Search any address to find its rank — click a row to check that wallet.</p>
-        <p class="lb-scorenote" data-i18n="lbScoreNote">Ranking is by holder score (balance × days held) — not by total amount staked. A smaller holder who held longer can outrank a bigger recent staker.</p>
+        <p class="lb-scorenote" id="lbModeNote">Ranking is by holder score (balance × days held) — not by total amount staked. A smaller holder who held longer can outrank a bigger recent staker.</p>
         <div class="lb-tiers" id="lbTiers"></div>
         <p class="lb-tiers-note mono" id="lbTiersNote"></p>
         <div class="lb-tools">
           <input id="lbSearch" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="60" placeholder="Search an address…" />
+          <div class="lb-modes" role="group">
+            <button type="button" class="lb-mode on" id="lbModeScore" data-i18n="lbByScore">By score</button>
+            <button type="button" class="lb-mode" id="lbModeBal" data-i18n="lbByBal">By amount staked</button>
+          </div>
         </div>
         <div class="lb-table">
           <div class="lb-row lb-head">
@@ -1185,6 +1193,8 @@
           lbNone:"No holder matches that search.", lbMeta:"{n} holders · snapshot {d} · scores grow live (1 rkuSOL = 1 point per day)", lbTierUnit:"holders",
           lbLiveNote:"Live on-chain · updated {t} · unstaked wallets excluded", lbSnapNote:"Snapshot {d}",
           lbScoreNote:"Ranking is by holder score (balance × days held) — not by total amount staked. A smaller holder who held longer can outrank a bigger recent staker.",
+          lbBalNote:"Ranking is by total rkuSOL staked — not by holder score. Score grows the longer you hold; this view only compares amounts.",
+          lbByScore:"By score", lbByBal:"By amount staked",
           stakesTitle:"Latest rkuSOL stakes", stakesTag:"Live · On-chain",
           stakesIntro:"The most recent rkuSOL stake, unstake and transfer activity, read live from the mint account's transactions on Solana mainnet.",
           stakesColType:"Type", stakesColAmt:"Amount", stakesColWallet:"Wallet", stakesColTime:"Time", stakesColTx:"Tx",
@@ -1259,6 +1269,8 @@
           lbNone:"Tidak ada holder yang cocok dengan pencarian itu.", lbMeta:"{n} holder · snapshot {d} · skor bertambah live (1 rkuSOL = 1 poin per hari)", lbTierUnit:"holder",
           lbLiveNote:"Live on-chain · diperbarui {t} · wallet yang sudah unstake tidak dihitung", lbSnapNote:"Snapshot {d}",
           lbScoreNote:"Peringkat berdasarkan skor holder (saldo × hari dipegang) — bukan berdasarkan total staking. Holder kecil yang memegang lebih lama bisa mengalahkan staker besar yang baru masuk.",
+          lbBalNote:"Peringkat berdasarkan total rkuSOL yang di-stake — bukan berdasarkan skor holder. Skor bertambah seiring lamanya memegang; tampilan ini hanya membandingkan jumlah.",
+          lbByScore:"Berdasarkan skor", lbByBal:"Berdasarkan jumlah staking",
           stakesTitle:"Stake rkuSOL terbaru", stakesTag:"Live · On-chain",
           stakesIntro:"Aktivitas stake, unstake, dan transfer rkuSOL paling baru, dibaca live dari transaksi akun mint di Solana mainnet.",
           stakesColType:"Tipe", stakesColAmt:"Jumlah", stakesColWallet:"Dompet", stakesColTime:"Waktu", stakesColTx:"Tx",
@@ -8573,6 +8585,35 @@
         var meta = document.getElementById("lbMeta");
         if (meta && lbView) meta.textContent = lbMetaText();
         drawLbTiers();
+        drawLbModeNote();
+      }
+      var lbMode = "score";
+      function drawLbModeNote() {
+        var el = document.getElementById("lbModeNote");
+        if (!el) return;
+        el.textContent = lbMode === "balance"
+          ? (dict().lbBalNote || I18N.en.lbBalNote)
+          : (dict().lbScoreNote || I18N.en.lbScoreNote);
+      }
+      function lbOrdered() {
+        if (lbMode === "balance") return lbView.rows.slice().sort(function (a, b) { return b.bal - a.bal; });
+        return lbView.rows;
+      }
+      function lbApplySearch() {
+        if (!lbView) return;
+        var q = (document.getElementById("lbSearch").value || "").trim().toLowerCase();
+        var src = lbOrdered();
+        if (!q) { drawLbRows(src.slice(0, 10)); return; }
+        var hits = src.filter(function (r) { return r.addr.toLowerCase().indexOf(q) !== -1; });
+        drawLbRows(hits.slice(0, 10));
+      }
+      function setLbMode(m) {
+        lbMode = m;
+        var bs = document.getElementById("lbModeScore"), bb = document.getElementById("lbModeBal");
+        if (bs) bs.classList.toggle("on", m === "score");
+        if (bb) bb.classList.toggle("on", m === "balance");
+        drawLbModeNote();
+        lbApplySearch();
       }
       function drawLbTiers() {
         var box = document.getElementById("lbTiers");
@@ -8644,10 +8685,11 @@
           return;
         }
         rows.forEach(function (r) {
+          var rank = lbMode === "balance" ? r.rankBal : r.rank;
           var row = document.createElement("button");
           row.type = "button";
-          row.className = "lb-row" + (r.rank <= 3 ? " lb-top" : "");
-          var cRank = document.createElement("span"); cRank.className = "lb-c-rank"; cRank.textContent = "#" + r.rank;
+          row.className = "lb-row" + (rank <= 3 ? " lb-top" : "");
+          var cRank = document.createElement("span"); cRank.className = "lb-c-rank"; cRank.textContent = "#" + rank;
           var cHold = document.createElement("span"); cHold.className = "lb-c-holder mono";
           var addrTxt = document.createElement("span"); addrTxt.textContent = maskAddr(r.addr);
           cHold.appendChild(addrTxt);
@@ -8677,20 +8719,17 @@
           rows.forEach(function (r, i) { r.rank = i + 1; });
           var tiers = { Platinum: 0, Gold: 0, Hodler: 0 };
           rows.forEach(function (r) { var t = tierFor(r.bal); if (t) tiers[t]++; });
+          rows.slice().sort(function (a, b) { return b.bal - a.bal; }).forEach(function (r, i) { r.rankBal = i + 1; });
           lbView = { rows: rows, asOf: lb.asOf, total: rows.length, tiers: tiers, tiersLive: false, tiersAt: null };
-          drawLbRows(rows.slice(0, 10));
+          drawLbRows(lbOrdered().slice(0, 10));
           lbRefresh();
           loadLiveTiers();
           setInterval(loadLiveTiers, 60000);
         });
       }
-      document.getElementById("lbSearch").addEventListener("input", function () {
-        if (!lbView) return;
-        var q = this.value.trim().toLowerCase();
-        if (!q) { drawLbRows(lbView.rows.slice(0, 10)); return; }
-        var hits = lbView.rows.filter(function (r) { return r.addr.toLowerCase().indexOf(q) !== -1; });
-        drawLbRows(hits.slice(0, 10));
-      });
+      document.getElementById("lbSearch").addEventListener("input", lbApplySearch);
+      document.getElementById("lbModeScore").addEventListener("click", function () { setLbMode("score"); });
+      document.getElementById("lbModeBal").addEventListener("click", function () { setLbMode("balance"); });
       /* Fill the checker from elsewhere on the page (leaderboard row,
          watchlist chip, shared link) and run it. */
       function checkAddressFromUi(addr, xUser) {
